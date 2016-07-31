@@ -53,9 +53,7 @@ function createHost(projectRoot) {
       return files[fileName] && files[fileName].snap;
     },
     getScriptVersion: function (fileName) {
-      var version = files[fileName] && files[fileName].version.toString();
-      log.info(fileName, version);
-      return version;
+      return files[fileName] && files[fileName].version.toString();
     }
   };
 }
