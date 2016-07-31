@@ -6,9 +6,16 @@
   var EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
   var domainName = EXTENSION_UNIQUE_NAME;
   var domainManager = null;
+  var errorsForFile = require('./errors-for-file');
 
   function inspectFile(fullPath, projectRoot, callback) {
-    // TODO: call errorsForFile
+    return errorsForFile({
+      filePath: fullPath
+    }).then(function (results) {
+      callback(null, results);
+    }).catch(function (err) {
+      callback(err);
+    });
   }
 
   exports.init = function (_domainManager) {
