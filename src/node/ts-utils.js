@@ -64,6 +64,7 @@ function getStuffForProject(projectRoot) {
   }
   var host = createHost(projectRoot);
   var languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
+  // maybe add all .ts, .tsx files from projectRoot into the host now + add watching notifications
   projects[projectRoot] = {
     host: host,
     languageService: languageService
