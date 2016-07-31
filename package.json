@@ -23,6 +23,7 @@
     "test": "gulp test"
   },
   "dependencies": {
+    "tsconfig": "^5.0.3",
     "typescript": "^2.0.0"
   },
   "devDependencies": {
