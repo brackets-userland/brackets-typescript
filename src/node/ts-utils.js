@@ -12,6 +12,7 @@ function readConfig(projectRoot) {
 
   // Delete options that *should not* be passed through.
   delete result.config.compilerOptions.out;
+  delete result.config.compilerOptions.outDir;
   delete result.config.compilerOptions.outFile;
 
   // Add default compiler options to parsed config
@@ -72,35 +73,58 @@ function getStuffForProject(projectRoot) {
   return projects[projectRoot];
 }
 
-function mapDiagnostics(code, semanticDiagnostics, syntaxDiagnostics) {
-  var diagnostics = semanticDiagnostics.concat(syntaxDiagnostics);
+function mapDiagnostics(code, diagnostics) {
   return {
     errors: diagnostics.map(function (diagnostic) {
       // sample: {"start":255,"length":1,"messageText":"Cannot find name 's'.","category":1,"code":2304}
-      var message = 'T' + diagnostic.code + ': ' + diagnostic.messageText;
-      var lines = code.slice(0, diagnostic.start).split('\n');
-      var line = lines.length - 1;
-      var ch = lines[line].length;
-      var type = 'TODO';
+      // sample2: { file: undefined, start: undefined, length: undefined,
+      // messageText: 'Cannot find global type \'String\'.', category: 1, code: 2318 }
+      var type = 'TypeScriptDiagnostic';
+      var message = 'TS' + diagnostic.code + ': ' + diagnostic.messageText;
+
+      var line = 0;
+      var ch = 0;
+      if (diagnostic.file) {
+        var lineChar = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+        line = lineChar.line;
+        ch = lineChar.character;
+      }
+
       return {
+        type: type,
         message: message,
-        pos: { line: line, ch: ch },
-        type: type
+        pos: {
+          line: line,
+          ch: ch
+        }
       };
     })
   };
 }
 
+function standardizePath(str) {
+  return str.split('/').join(path.sep);
+}
+
 exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, callback) {
+  fullPath = standardizePath(fullPath);
+  projectRoot = standardizePath(projectRoot);
+  var relativePath = path.relative(projectRoot, fullPath);
   try {
     var obj = getStuffForProject(projectRoot);
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = path.relative(projectRoot, fullPath);
     host.addFile(relativePath, code);
+
+    var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(relativePath);
+    if (compilerDiagnostics.length > 0) {
+      return callback(null, mapDiagnostics(compilerDiagnostics));
+    }
+
     var semanticDiagnostics = languageService.getSemanticDiagnostics(relativePath);
     var syntaxDiagnostics = languageService.getSyntacticDiagnostics(relativePath);
-    callback(null, mapDiagnostics(code, semanticDiagnostics, syntaxDiagnostics));
+    var diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
+    return callback(null, mapDiagnostics(code, diagnostics));
   } catch (err) {
     log.error(err);
     callback(err);
@@ -108,11 +132,13 @@ exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, ca
 };
 
 exports.getCompletions = function getCompletions(fullPath, projectRoot, position, code, callback) {
+  fullPath = standardizePath(fullPath);
+  projectRoot = standardizePath(projectRoot);
+  var relativePath = path.relative(projectRoot, fullPath);
   try {
     var obj = getStuffForProject(projectRoot);
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = path.relative(projectRoot, fullPath);
     host.addFile(relativePath, code);
     var completions = languageService.getCompletionsAtPosition(relativePath, position, true);
     callback(null, completions);
