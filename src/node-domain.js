@@ -6,17 +6,7 @@
   var EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
   var domainName = EXTENSION_UNIQUE_NAME;
   var domainManager = null;
-  var errorsForFile = require('./errors-for-file');
-
-  function inspectFile(fullPath, projectRoot, callback) {
-    return errorsForFile({
-      filePath: fullPath
-    }).then(function (results) {
-      callback(null, results);
-    }).catch(function (err) {
-      callback(err);
-    });
-  }
+  var tsUtils = require('./node/ts-utils');
 
   exports.init = function (_domainManager) {
     domainManager = _domainManager;
@@ -27,13 +17,14 @@
 
     domainManager.registerCommand(
       domainName,
-      'inspectFile', // command name
-      inspectFile, // handler function
+      'getDiagnostics', // command name
+      tsUtils.getDiagnostics, // handler function
       true, // is async
-      'inspectFile', // description
+      'getDiagnostics', // description
       [
         { name: 'fullPath', type: 'string' },
-        { name: 'projectRoot', type: 'string' }
+        { name: 'projectRoot', type: 'string' },
+        { name: 'code', type: 'string' }
       ], [
         { name: 'report', type: 'object' }
       ]

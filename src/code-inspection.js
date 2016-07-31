@@ -20,9 +20,9 @@ define(function (require, exports, module) {
   function handleScanFileAsync(text, fullPath) {
     var deferred = new $.Deferred();
     var projectRoot = ProjectManager.getProjectRoot().fullPath;
-    nodeDomain.exec('inspectFile', fullPath, projectRoot)
+    nodeDomain.exec('getDiagnostics', fullPath, projectRoot, text)
       .then(function (report) {
-        Log.info('inspectFile results:' + JSON.stringify(report));
+        Log.info('getDiagnostics results:' + JSON.stringify(report));
         deferred.resolve(report);
       }, function (err) {
         deferred.reject(err);
