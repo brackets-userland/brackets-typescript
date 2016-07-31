@@ -6,6 +6,7 @@ module.exports = {
   rules: {
     // disable es6 rules
     'no-console': 0,
+    'no-param-reassign': 0,
     'no-var': 0,
     'prefer-arrow-callback': 0,
     'prefer-reflect': 0,
@@ -15,6 +16,7 @@ module.exports = {
     'strict': [2, 'function']
   },
   globals: {
+    $: false,
     brackets: false,
     define: false
   }

@@ -4,18 +4,23 @@ define(function (require, exports, module) {
   var LanguageManager = brackets.getModule('language/LanguageManager');
   var Log = require('./log');
 
-  var tsDefinition = LanguageManager.getLanguageForExtension('ts');
-  if (tsDefinition) {
-    Log.error('ts extension language already defined: ' + JSON.stringify(tsDefinition));
-    return;
+  function defineLanguage(languageId, languageName, extension) {
+    var existingDefinition = LanguageManager.getLanguageForExtension(extension);
+    if (existingDefinition) {
+      Log.error(extension + ' extension language already defined: ' + JSON.stringify(existingDefinition));
+      return;
+    }
+
+    LanguageManager.defineLanguage(languageId, {
+      name: languageName,
+      mode: ['javascript', 'text/typescript'],
+      fileExtensions: [extension],
+      blockComment: ['/*', '*/'],
+      lineComment: ['//']
+    });
   }
 
-  LanguageManager.defineLanguage('typescript', {
-    name: 'TypeScript',
-    mode: ['javascript', 'text/typescript'],
-    fileExtensions: ['ts', 'tsx'],
-    blockComment: ['/*', '*/'],
-    lineComment: ['//']
-  });
+  defineLanguage('typescript', 'TypeScript', 'ts');
+  defineLanguage('tsx', 'TypeScript', 'tsx');
 
 });

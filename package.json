@@ -22,7 +22,9 @@
   "scripts": {
     "test": "gulp test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "typescript": "^2.0.0"
+  },
   "devDependencies": {
     "babel-eslint": "6.x",
     "eslint": "2.x",
