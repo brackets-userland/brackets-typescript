@@ -23,6 +23,7 @@
     "test": "gulp test"
   },
   "dependencies": {
+    "lodash": "^4.14.1",
     "tsconfig": "^5.0.3",
     "typescript": "^2.0.0"
   },

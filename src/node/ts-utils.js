@@ -1,19 +1,31 @@
 'use strict';
 
-var fs = require('fs');
+var _ = require('lodash');
 var ts = require('typescript');
 var log = require('./log');
 var path = require('path');
+var loadSync = require('tsconfig').loadSync;
 var projects = {};
+
+function readConfig(projectRoot) {
+  var result = loadSync(projectRoot);
+
+  // Delete options that *should not* be passed through.
+  delete result.config.compilerOptions.out;
+  delete result.config.compilerOptions.outFile;
+
+  // Add default compiler options to parsed config
+  result.config.compilerOptions = _.defaults(result.config.compilerOptions, ts.getDefaultCompilerOptions());
+
+  var basePath = result.path ? path.dirname(result.path) : projectRoot;
+  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, result.path);
+}
 
 function createHost(projectRoot) {
   var files = [];
   return {
     getCompilationSettings: function () {
-      if (fs.existsSync(path.resolve(projectRoot, 'tsconfig.json'))) {
-        // TODO:
-      }
-      return ts.getDefaultCompilerOptions();
+      return readConfig(projectRoot);
     },
     getDefaultLibFileName: function (options) {
       return ts.getDefaultLibFilePath(options);
