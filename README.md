@@ -1,6 +1,6 @@
 # brackets-typescript
 
-Brackets extension which provides support for working with Typescript.
+Brackets extension which provides support for working with TypeScript.
 
 ## How to install
 
