@@ -73,7 +73,7 @@ function getStuffForProject(projectRoot) {
   return projects[projectRoot];
 }
 
-function mapDiagnostics(code, diagnostics) {
+function mapDiagnostics(diagnostics) {
   return {
     errors: diagnostics.map(function (diagnostic) {
       // sample: {"start":255,"length":1,"messageText":"Cannot find name 's'.","category":1,"code":2304}
@@ -124,7 +124,7 @@ exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, ca
     var semanticDiagnostics = languageService.getSemanticDiagnostics(relativePath);
     var syntaxDiagnostics = languageService.getSyntacticDiagnostics(relativePath);
     var diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
-    return callback(null, mapDiagnostics(code, diagnostics));
+    return callback(null, mapDiagnostics(diagnostics));
   } catch (err) {
     log.error(err);
     callback(err);
