@@ -8,6 +8,14 @@ var path = require('path');
 var resolveSync = require('tsconfig').resolveSync;
 var projects = {};
 
+function throwError(error) {
+  var err = new Error(error.messageText);
+  err.name = 'ReadConfigError';
+  err.code = error.code;
+  err.messageText = error.messageText;
+  throw err;
+}
+
 function readConfig(projectRoot) {
   var tsconfigPath = resolveSync(projectRoot);
   var tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
@@ -15,19 +23,12 @@ function readConfig(projectRoot) {
 
   var rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, tsconfigContents);
   if (rawConfig.error) {
-    log.error('TS' + rawConfig.error.code + ': ' + rawConfig.error.messageText);
-    // make sure settings are at least something
-    rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, '{}');
+    throwError(rawConfig.error);
   }
 
   var settings = ts.convertCompilerOptionsFromJson(rawConfig.config.compilerOptions, tsconfigDir);
   if (settings.errors && settings.errors.length > 0) {
-    settings.errors.forEach(function (err) {
-      log.error('TS' + err.code + ': ' + err.messageText);
-    });
-    // make sure settings are at least something
-    rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, '{}');
-    settings = ts.convertCompilerOptionsFromJson(rawConfig.config.compilerOptions, tsconfigDir);
+    throwError(settings.errors[0]);
   }
 
   return _.defaults(settings.options, ts.getDefaultCompilerOptions());
@@ -150,6 +151,9 @@ exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, ca
     var diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
     return callback(null, mapDiagnostics(diagnostics));
   } catch (err) {
+    if (err.name === 'ReadConfigError') {
+      return callback(null, mapDiagnostics([ err ]));
+    }
     log.error(err);
     return callback(err);
   }
@@ -166,6 +170,9 @@ exports.getCompletions = function getCompletions(fullPath, projectRoot, position
     var completions = languageService.getCompletionsAtPosition(relativePath, position, true);
     return callback(null, completions);
   } catch (err) {
+    if (err.name === 'ReadConfigError') {
+      return callback(null, mapDiagnostics([ err ]));
+    }
     log.error(err);
     return callback(err);
   }
