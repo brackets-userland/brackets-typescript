@@ -1,5 +1,9 @@
 'use strict';
 
+if (!global.Promise) {
+  require('any-promise/register/bluebird');
+}
+
 var PackageJson = require('../../package.json');
 var EXTENSION_NAME = PackageJson.name;
 var EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
