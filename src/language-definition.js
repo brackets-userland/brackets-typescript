@@ -2,12 +2,13 @@ define(function (require, exports, module) {
   'use strict';
 
   var LanguageManager = brackets.getModule('language/LanguageManager');
-  var Log = require('./log');
+  var log = require('./log');
 
   function defineLanguage(languageId, languageName, extension) {
     var existingDefinition = LanguageManager.getLanguageForExtension(extension);
     if (existingDefinition) {
-      Log.error(extension + ' extension language already defined: ' + JSON.stringify(existingDefinition));
+      log.error(extension + ' extension language already defined: ' + JSON.stringify(existingDefinition));
+      module.exports = false;
       return;
     }
 
@@ -22,5 +23,6 @@ define(function (require, exports, module) {
 
   defineLanguage('typescript', 'TypeScript', 'ts');
   defineLanguage('tsx', 'TypeScript', 'tsx');
+  module.exports = true;
 
 });

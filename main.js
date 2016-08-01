@@ -1,7 +1,8 @@
 define(function (require, exports, module) {
   'use strict';
 
-  require('src/language-definition');
-  require('src/code-inspection');
+  var proceed = require('src/language-definition');
+  if (!proceed) { return; }
+  require('src/code-inspection')();
 
 });
