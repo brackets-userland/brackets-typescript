@@ -109,7 +109,8 @@ function mapDiagnostics(diagnostics) {
       // sample2: { file: undefined, start: undefined, length: undefined,
       // messageText: 'Cannot find global type \'String\'.', category: 1, code: 2318 }
       var type = 'TypeScriptDiagnostic';
-      var message = 'TS' + diagnostic.code + ': ' + diagnostic.messageText;
+      var messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
+      var message = 'TS' + diagnostic.code + ': ' + messageText;
 
       var line = 0;
       var ch = 0;
