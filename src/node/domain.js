@@ -39,8 +39,7 @@ exports.init = function (_domainManager) {
       { name: 'projectRoot', type: 'string' },
       { name: 'fullPath', type: 'string' },
       { name: 'code', type: 'string' },
-      { name: 'position', type: 'number' },
-      { name: 'implicitChar', type: 'string' }
+      { name: 'position', type: 'number' }
     ], [
       { name: 'report', type: 'object' }
     ]

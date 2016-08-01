@@ -5,7 +5,7 @@ var fs = require('fs');
 var ts = require('typescript');
 var log = require('./log');
 var path = require('path');
-// var escapeStringRegexp = require('escape-string-regexp');
+var escapeStringRegexp = require('escape-string-regexp');
 var resolveSync = require('tsconfig').resolveSync;
 var projects = {};
 
@@ -161,16 +161,20 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
 };
 
 function mapCompletions(completions, currentWord) {
-  // completions keys: isMemberCompletion, isNewIdentifierLocation, entries
-  var hints = completions.entries.map(function (c) { return c.name; });
-  /*
+  var entries = completions.entries || [];
+  var hints = _.sortBy(entries, function (entry) {
+    var sort = entry.sortText;
+    if (currentWord) {
+      sort += entry.name.indexOf(currentWord) === 0 ? '0' : '1';
+    }
+    return sort + entry.name.toLowerCase();
+  }).map(function (entry) { return entry.name; });
+
   if (currentWord) {
-    var re = new RegExp('^' + escapeStringRegexp(currentWord) + '.+', 'i');
+    var re = new RegExp('^' + escapeStringRegexp(currentWord), 'i');
     hints = hints.filter(function (h) { return re.test(h); });
   }
-  log.info('currentWord', currentWord);
-  log.info('hints', hints);
-  */
+
   return {
     hints: hints,
     match: currentWord,
@@ -179,7 +183,7 @@ function mapCompletions(completions, currentWord) {
   };
 }
 
-exports.getCompletions = function getCompletions(projectRoot, fullPath, code, position, implicitChar, callback) {
+exports.getCompletions = function getCompletions(projectRoot, fullPath, code, position, callback) {
   try {
     var relativePath = path.relative(projectRoot, fullPath);
     var obj = getStuffForProject(projectRoot);
@@ -187,10 +191,19 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
     var languageService = obj.languageService;
     host.addFile(relativePath, code);
 
-    var completions = languageService.getCompletionsAtPosition(relativePath, position, true);
-    var m = code.slice(0, position).match(/\S+$/);
-    var currentWord = m ? m[0] : null;
+    var isMemberCompletion = false;
+    var currentWord = null;
+    var codeBeforeCursor = code.slice(0, position);
+    var match = codeBeforeCursor.match(/\.([\$_a-zA-Z0-9]*$)/);
+    if (match && match.length > 0) {
+      isMemberCompletion = true;
+      currentWord = match[1];
+    } else {
+      match = codeBeforeCursor.match(/[\$_a-zA-Z0-9]+$/);
+      currentWord = match ? match[0] : null;
+    }
 
+    var completions = languageService.getCompletionsAtPosition(relativePath, position, isMemberCompletion);
     return callback(null, mapCompletions(completions, currentWord));
   } catch (err) {
     if (err.name === 'ReadConfigError') {
