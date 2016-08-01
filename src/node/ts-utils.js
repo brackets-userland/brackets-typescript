@@ -1,55 +1,85 @@
 'use strict';
 
 var _ = require('lodash');
+var fs = require('fs');
 var ts = require('typescript');
 var log = require('./log');
 var path = require('path');
-var loadSync = require('tsconfig').loadSync;
+var resolveSync = require('tsconfig').resolveSync;
 var projects = {};
 
 function readConfig(projectRoot) {
-  var result = loadSync(projectRoot);
+  var tsconfigPath = resolveSync(projectRoot);
+  var tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
+  var tsconfigContents = fs.readFileSync(tsconfigPath, 'utf8');
 
-  // Delete options that *should not* be passed through.
-  delete result.config.compilerOptions.out;
-  delete result.config.compilerOptions.outDir;
-  delete result.config.compilerOptions.outFile;
+  var rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, tsconfigContents);
+  if (rawConfig.error) {
+    log.error('TS' + rawConfig.error.code + ': ' + rawConfig.error.messageText);
+    // make sure settings are at least something
+    rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, '{}');
+  }
 
-  // Add default compiler options to parsed config
-  result.config.compilerOptions = _.defaults(result.config.compilerOptions, ts.getDefaultCompilerOptions());
+  var settings = ts.convertCompilerOptionsFromJson(rawConfig.config.compilerOptions, tsconfigDir);
+  if (settings.errors && settings.errors.length > 0) {
+    settings.errors.forEach(function (err) {
+      log.error('TS' + err.code + ': ' + err.messageText);
+    });
+    // make sure settings are at least something
+    rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, '{}');
+    settings = ts.convertCompilerOptionsFromJson(rawConfig.config.compilerOptions, tsconfigDir);
+  }
 
-  var basePath = result.path ? path.dirname(result.path) : projectRoot;
-  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, result.path);
+  return _.defaults(settings.options, ts.getDefaultCompilerOptions());
 }
 
 function createHost(projectRoot) {
+
   var files = [];
+
+  function addFile(fileName, body) {
+    var snap = ts.ScriptSnapshot.fromString(body);
+    if (files[fileName]) {
+      files[fileName].version += 1;
+      files[fileName].snap = snap;
+    } else {
+      files[fileName] = { version: 1, snap: snap };
+    }
+  }
+
+  function addFileSync(fileName) {
+    fileName = fileName.replace(/\\/g, '/');
+    addFile(fileName, fs.readFileSync(fileName, 'utf8'));
+  }
+
   return {
-    getCompilationSettings: function () {
-      return readConfig(projectRoot);
-    },
-    getDefaultLibFileName: function (options) {
-      return ts.getDefaultLibFilePath(options);
-    },
     getCurrentDirectory: function () {
       return projectRoot;
     },
     getScriptFileNames: function () {
       return Object.keys(files);
     },
-    getScriptIsOpen: function () {
-      return true;
+    getCompilationSettings: function () {
+      return readConfig(projectRoot);
     },
-    addFile: function (fileName, body) {
-      var snap = ts.ScriptSnapshot.fromString(body);
-      if (files[fileName]) {
-        files[fileName].version += 1;
-        files[fileName].snap = snap;
-      } else {
-        files[fileName] = { version: 1, snap: snap };
+    getDefaultLibFileName: function (options) {
+      var defaultLibFileName = ts.getDefaultLibFilePath(options);
+      addFileSync(defaultLibFileName);
+      return defaultLibFileName;
+    },
+    addFile: addFile,
+    getScriptIsOpen: function (fileName) {
+      if (!files[fileName]) {
+        log.error('getScriptIsOpen file not open yet: ' + fileName);
+        addFileSync(fileName);
       }
+      return !!files[fileName];
     },
     getScriptSnapshot: function (fileName) {
+      if (!files[fileName]) {
+        log.error('getScriptSnapshot file not open yet: ' + fileName);
+        addFileSync(fileName);
+      }
       return files[fileName] && files[fileName].snap;
     },
     getScriptVersion: function (fileName) {
@@ -101,15 +131,9 @@ function mapDiagnostics(diagnostics) {
   };
 }
 
-function standardizePath(str) {
-  return str.split('/').join(path.sep);
-}
-
 exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, callback) {
-  fullPath = standardizePath(fullPath);
-  projectRoot = standardizePath(projectRoot);
-  var relativePath = path.relative(projectRoot, fullPath);
   try {
+    var relativePath = path.relative(projectRoot, fullPath);
     var obj = getStuffForProject(projectRoot);
     var host = obj.host;
     var languageService = obj.languageService;
@@ -126,22 +150,22 @@ exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, ca
     return callback(null, mapDiagnostics(diagnostics));
   } catch (err) {
     log.error(err);
-    callback(err);
+    return callback(err);
   }
 };
 
 exports.getCompletions = function getCompletions(fullPath, projectRoot, position, code, callback) {
-  fullPath = standardizePath(fullPath);
-  projectRoot = standardizePath(projectRoot);
-  var relativePath = path.relative(projectRoot, fullPath);
   try {
+    var relativePath = path.relative(projectRoot, fullPath);
     var obj = getStuffForProject(projectRoot);
     var host = obj.host;
     var languageService = obj.languageService;
     host.addFile(relativePath, code);
+
     var completions = languageService.getCompletionsAtPosition(relativePath, position, true);
-    callback(null, completions);
+    return callback(null, completions);
   } catch (err) {
-    callback(err);
+    log.error(err);
+    return callback(err);
   }
 };
