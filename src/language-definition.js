@@ -21,8 +21,8 @@ define(function (require, exports, module) {
     });
   }
 
+  module.exports = true;
   defineLanguage('typescript', 'TypeScript', 'ts');
   defineLanguage('tsx', 'TypeScript', 'tsx');
-  module.exports = true;
 
 });
