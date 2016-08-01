@@ -4,7 +4,6 @@ define(function (require, exports, module) {
   var CodeInspection = brackets.getModule('language/CodeInspection');
   var ProjectManager = brackets.getModule('project/ProjectManager');
   var nodeDomain = require('./node-domain');
-  var log = require('./log');
   var LINTER_NAME = 'TypeScript';
 
   function handleScanFile(text, fullPath) {
@@ -14,9 +13,8 @@ define(function (require, exports, module) {
   function handleScanFileAsync(text, fullPath) {
     var deferred = new $.Deferred();
     var projectRoot = ProjectManager.getProjectRoot().fullPath;
-    nodeDomain.exec('getDiagnostics', fullPath, projectRoot, text)
+    nodeDomain.exec('getDiagnostics', projectRoot, fullPath, text)
       .then(function (report) {
-        log.info('getDiagnostics results:' + JSON.stringify(report));
         deferred.resolve(report);
       }, function (err) {
         deferred.reject(err);

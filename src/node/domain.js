@@ -21,11 +21,29 @@ exports.init = function (_domainManager) {
     true, // is async
     'getDiagnostics', // description
     [
-      { name: 'fullPath', type: 'string' },
       { name: 'projectRoot', type: 'string' },
+      { name: 'fullPath', type: 'string' },
       { name: 'code', type: 'string' }
     ], [
       { name: 'report', type: 'object' }
     ]
   );
+
+  domainManager.registerCommand(
+    domainName,
+    'getCompletions', // command name
+    tsUtils.getCompletions, // handler function
+    true, // is async
+    'getCompletions', // description
+    [
+      { name: 'projectRoot', type: 'string' },
+      { name: 'fullPath', type: 'string' },
+      { name: 'code', type: 'string' },
+      { name: 'position', type: 'number' },
+      { name: 'implicitChar', type: 'string' }
+    ], [
+      { name: 'report', type: 'object' }
+    ]
+  );
+
 };

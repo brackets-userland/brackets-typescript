@@ -5,6 +5,7 @@ var fs = require('fs');
 var ts = require('typescript');
 var log = require('./log');
 var path = require('path');
+// var escapeStringRegexp = require('escape-string-regexp');
 var resolveSync = require('tsconfig').resolveSync;
 var projects = {};
 
@@ -133,7 +134,7 @@ function mapDiagnostics(diagnostics) {
   };
 }
 
-exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, callback) {
+exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, callback) {
   try {
     var relativePath = path.relative(projectRoot, fullPath);
     var obj = getStuffForProject(projectRoot);
@@ -159,7 +160,26 @@ exports.getDiagnostics = function getDiagnostics(fullPath, projectRoot, code, ca
   }
 };
 
-exports.getCompletions = function getCompletions(fullPath, projectRoot, position, code, callback) {
+function mapCompletions(completions, currentWord) {
+  // completions keys: isMemberCompletion, isNewIdentifierLocation, entries
+  var hints = completions.entries.map(function (c) { return c.name; });
+  /*
+  if (currentWord) {
+    var re = new RegExp('^' + escapeStringRegexp(currentWord) + '.+', 'i');
+    hints = hints.filter(function (h) { return re.test(h); });
+  }
+  log.info('currentWord', currentWord);
+  log.info('hints', hints);
+  */
+  return {
+    hints: hints,
+    match: currentWord,
+    selectInitial: true,
+    handleWideResults: false
+  };
+}
+
+exports.getCompletions = function getCompletions(projectRoot, fullPath, code, position, implicitChar, callback) {
   try {
     var relativePath = path.relative(projectRoot, fullPath);
     var obj = getStuffForProject(projectRoot);
@@ -168,7 +188,10 @@ exports.getCompletions = function getCompletions(fullPath, projectRoot, position
     host.addFile(relativePath, code);
 
     var completions = languageService.getCompletionsAtPosition(relativePath, position, true);
-    return callback(null, completions);
+    var m = code.slice(0, position).match(/\S+$/);
+    var currentWord = m ? m[0] : null;
+
+    return callback(null, mapCompletions(completions, currentWord));
   } catch (err) {
     if (err.name === 'ReadConfigError') {
       return callback(null, mapDiagnostics([ err ]));

@@ -5,6 +5,8 @@ module.exports = {
   env: { node: true },
   rules: {
     // disable es6 rules
+    'lines-around-comment': 0,
+    'max-params': 0,
     'no-console': 0,
     'no-param-reassign': 0,
     'no-var': 0,
