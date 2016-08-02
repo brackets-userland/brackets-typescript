@@ -19,6 +19,10 @@ function glob(pattern, options) {
   });
 }
 
+function fixFilename(fileName) {
+  return typeof fileName === 'string' ? fileName.replace(/\\/g, '/') : null;
+}
+
 function throwError(error) {
   var err = new Error(error.messageText);
   err.name = 'ReadConfigError';
@@ -66,7 +70,6 @@ function createHost(projectRoot) {
   }
 
   function addFileSync(fileName) {
-    fileName = fileName.replace(/\\/g, '/');
     if (files[fileName]) {
       return;
     }
@@ -80,16 +83,14 @@ function createHost(projectRoot) {
   }
 
   function addFileAsync(fileName) {
-    fileName = fileName.replace(/\\/g, '/');
-    log.info('loading...', fileName);
     return new Promise(function (resolve, reject) {
       if (files[fileName]) {
         return resolve();
       }
-      fs.readFile(fileName, 'utf8', function (ignoreErr, contents) {
-        // if (err) {
-        //   log.error('Cannot open file (' + err.code + '): ' + fileName);
-        // }
+      fs.readFile(fileName, 'utf8', function (err, contents) {
+        if (err) {
+          log.error('Cannot open file (' + err.code + '): ' + fileName);
+        }
         addFile(fileName, contents || null);
         return resolve();
       });
@@ -109,20 +110,23 @@ function createHost(projectRoot) {
       return readConfig(projectRoot);
     },
     getDefaultLibFileName: function (options) {
-      var fileName = ts.getDefaultLibFilePath(options);
+      var fileName = fixFilename(ts.getDefaultLibFilePath(options));
       addFileSync(fileName);
       return fileName;
     },
     addFile: addFile,
     getScriptIsOpen: function (fileName) {
+      fileName = fixFilename(fileName);
       addFileSync(fileName);
       return files[fileName] && files[fileName].snap != null;
     },
     getScriptSnapshot: function (fileName) {
+      fileName = fixFilename(fileName);
       addFileSync(fileName);
       return files[fileName] && files[fileName].snap;
     },
     getScriptVersion: function (fileName) {
+      fileName = fixFilename(fileName);
       addFileSync(fileName);
       return files[fileName] && files[fileName].version.toString();
     }
@@ -139,7 +143,7 @@ function getStuffForProject(projectRoot) {
   return glob('./**/*.d.ts', { cwd: projectRoot, silent: true })
     .then(function (files) {
       return Promise.all(files.map(function (relativePath) {
-        return host.$addFileAsync(path.resolve(projectRoot, relativePath));
+        return host.$addFileAsync(fixFilename(path.resolve(projectRoot, relativePath)));
       }));
     })
     .then(function () {
@@ -185,7 +189,7 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
   return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = path.relative(projectRoot, fullPath);
+    var relativePath = fixFilename(path.relative(projectRoot, fullPath));
     host.addFile(relativePath, code);
 
     var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(relativePath);
@@ -233,7 +237,7 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
   return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = path.relative(projectRoot, fullPath);
+    var relativePath = fixFilename(path.relative(projectRoot, fullPath));
     host.addFile(relativePath, code);
 
     var isMemberCompletion = false;
