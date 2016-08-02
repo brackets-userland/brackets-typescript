@@ -15,7 +15,7 @@ define(function (require, exports, module) {
   };
 
   TypeScriptHintProvider.prototype.getHints = function getHints(implicitChar) {
-    if (implicitChar != null && /^\s+$/.test(implicitChar)) {
+    if (implicitChar == null || !/^[\.\$_a-zA-Z0-9]$/.test(implicitChar)) {
       return;
     }
     var deferred = new $.Deferred();
