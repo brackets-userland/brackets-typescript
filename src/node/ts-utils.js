@@ -54,6 +54,10 @@ function createHost(projectRoot) {
   var files = [];
 
   function addFile(fileName, body) {
+    // TODO: if package.json exist, we should parse it for information on typings and stuff
+    if (/\/package.json$/.test(fileName)) {
+      body = null;
+    }
     if (body == null) {
       if (!files[fileName]) {
         files[fileName] = { version: 1, snap: null };
