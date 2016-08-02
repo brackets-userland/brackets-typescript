@@ -144,6 +144,8 @@ function getStuffForProject(projectRoot) {
   var host = createHost(projectRoot);
   var languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
   // TODO: maybe add all .ts, .tsx files from projectRoot into the host now + add watching notifications
+  // TODO: use ts.matchFiles to find files to include in the host
+  // https://github.com/Microsoft/TypeScript/blob/0c131fab68f9c8897679ffc2909a11f2b0455f99/src/compiler/core.ts#L1077
   return glob('./**/*.d.ts', { cwd: projectRoot, silent: true })
     .then(function (files) {
       return Promise.all(files.map(function (relativePath) {
