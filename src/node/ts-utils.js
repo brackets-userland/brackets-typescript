@@ -2,12 +2,22 @@
 
 var _ = require('lodash');
 var fs = require('fs');
+var Glob = require('glob');
 var ts = require('typescript');
 var log = require('./log');
 var path = require('path');
+var Promise = require('bluebird');
 var escapeStringRegexp = require('escape-string-regexp');
 var resolveSync = require('tsconfig').resolveSync;
 var projects = {};
+
+function glob(pattern, options) {
+  return new Promise(function (resolve, reject) {
+    Glob(pattern, options, function (err, files) {
+      return err ? reject(err) : resolve(files);
+    });
+  });
+}
 
 function throwError(error) {
   var err = new Error(error.messageText);
@@ -56,20 +66,39 @@ function createHost(projectRoot) {
   }
 
   function addFileSync(fileName) {
+    fileName = fileName.replace(/\\/g, '/');
     if (files[fileName]) {
       return;
     }
-    fileName = fileName.replace(/\\/g, '/');
     var contents = null;
     try {
       contents = fs.readFileSync(fileName, 'utf8');
-    } catch (err) {
-      log.error('Cannot open file (' + err.code + '): ' + fileName);
+    } catch (ignoreErr) {
+      // log.error('Cannot open file (' + err.code + '): ' + fileName);
     }
     addFile(fileName, contents);
   }
 
+  function addFileAsync(fileName) {
+    fileName = fileName.replace(/\\/g, '/');
+    log.info('loading...', fileName);
+    return new Promise(function (resolve, reject) {
+      if (files[fileName]) {
+        return resolve();
+      }
+      fs.readFile(fileName, 'utf8', function (ignoreErr, contents) {
+        // if (err) {
+        //   log.error('Cannot open file (' + err.code + '): ' + fileName);
+        // }
+        addFile(fileName, contents || null);
+        return resolve();
+      });
+    });
+  }
+
   return {
+    $addFileSync: addFileSync,
+    $addFileAsync: addFileAsync,
     getCurrentDirectory: function () {
       return projectRoot;
     },
@@ -102,16 +131,24 @@ function createHost(projectRoot) {
 
 function getStuffForProject(projectRoot) {
   if (projects[projectRoot]) {
-    return projects[projectRoot];
+    return Promise.resolve(projects[projectRoot]);
   }
   var host = createHost(projectRoot);
   var languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
-  // maybe add all .ts, .tsx files from projectRoot into the host now + add watching notifications
-  projects[projectRoot] = {
-    host: host,
-    languageService: languageService
-  };
-  return projects[projectRoot];
+  // TODO: maybe add all .ts, .tsx files from projectRoot into the host now + add watching notifications
+  return glob('./**/*.d.ts', { cwd: projectRoot, silent: true })
+    .then(function (files) {
+      return Promise.all(files.map(function (relativePath) {
+        return host.$addFileAsync(path.resolve(projectRoot, relativePath));
+      }));
+    })
+    .then(function () {
+      projects[projectRoot] = {
+        host: host,
+        languageService: languageService
+      };
+      return projects[projectRoot];
+    });
 }
 
 function mapDiagnostics(diagnostics) {
@@ -145,11 +182,10 @@ function mapDiagnostics(diagnostics) {
 }
 
 exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, callback) {
-  try {
-    var relativePath = path.relative(projectRoot, fullPath);
-    var obj = getStuffForProject(projectRoot);
+  return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
     var languageService = obj.languageService;
+    var relativePath = path.relative(projectRoot, fullPath);
     host.addFile(relativePath, code);
 
     var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(relativePath);
@@ -161,13 +197,13 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
     var syntaxDiagnostics = languageService.getSyntacticDiagnostics(relativePath);
     var diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
     return callback(null, mapDiagnostics(diagnostics));
-  } catch (err) {
+  }).catch(function (err) {
     if (err.name === 'ReadConfigError') {
       return callback(null, mapDiagnostics([ err ]));
     }
     log.error(err);
     return callback(err);
-  }
+  });
 };
 
 function mapCompletions(completions, currentWord) {
@@ -194,11 +230,10 @@ function mapCompletions(completions, currentWord) {
 }
 
 exports.getCompletions = function getCompletions(projectRoot, fullPath, code, position, callback) {
-  try {
-    var relativePath = path.relative(projectRoot, fullPath);
-    var obj = getStuffForProject(projectRoot);
+  return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
     var languageService = obj.languageService;
+    var relativePath = path.relative(projectRoot, fullPath);
     host.addFile(relativePath, code);
 
     var isMemberCompletion = false;
@@ -215,11 +250,11 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
 
     var completions = languageService.getCompletionsAtPosition(relativePath, position, isMemberCompletion);
     return callback(null, mapCompletions(completions, currentWord));
-  } catch (err) {
+  }).catch(function (err) {
     if (err.name === 'ReadConfigError') {
       return callback(null, mapDiagnostics([ err ]));
     }
     log.error(err);
     return callback(err);
-  }
+  });
 };
