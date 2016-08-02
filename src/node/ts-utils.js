@@ -40,6 +40,12 @@ function createHost(projectRoot) {
   var files = [];
 
   function addFile(fileName, body) {
+    if (body == null) {
+      if (!files[fileName]) {
+        files[fileName] = { version: 1, snap: null };
+      }
+      return;
+    }
     var snap = ts.ScriptSnapshot.fromString(body);
     if (files[fileName]) {
       files[fileName].version += 1;
@@ -50,8 +56,17 @@ function createHost(projectRoot) {
   }
 
   function addFileSync(fileName) {
+    if (files[fileName]) {
+      return;
+    }
     fileName = fileName.replace(/\\/g, '/');
-    addFile(fileName, fs.readFileSync(fileName, 'utf8'));
+    var contents = null;
+    try {
+      contents = fs.readFileSync(fileName, 'utf8');
+    } catch (err) {
+      log.error('Cannot open file (' + err.code + '): ' + fileName);
+    }
+    addFile(fileName, contents);
   }
 
   return {
@@ -65,26 +80,21 @@ function createHost(projectRoot) {
       return readConfig(projectRoot);
     },
     getDefaultLibFileName: function (options) {
-      var defaultLibFileName = ts.getDefaultLibFilePath(options);
-      addFileSync(defaultLibFileName);
-      return defaultLibFileName;
+      var fileName = ts.getDefaultLibFilePath(options);
+      addFileSync(fileName);
+      return fileName;
     },
     addFile: addFile,
     getScriptIsOpen: function (fileName) {
-      if (!files[fileName]) {
-        log.error('getScriptIsOpen file not open yet: ' + fileName);
-        addFileSync(fileName);
-      }
-      return !!files[fileName];
+      addFileSync(fileName);
+      return files[fileName] && files[fileName].snap != null;
     },
     getScriptSnapshot: function (fileName) {
-      if (!files[fileName]) {
-        log.error('getScriptSnapshot file not open yet: ' + fileName);
-        addFileSync(fileName);
-      }
+      addFileSync(fileName);
       return files[fileName] && files[fileName].snap;
     },
     getScriptVersion: function (fileName) {
+      addFileSync(fileName);
       return files[fileName] && files[fileName].version.toString();
     }
   };
