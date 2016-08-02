@@ -11,7 +11,7 @@ define(function (require, exports, module) {
   }
 
   function handleScanFileAsync(text, fullPath) {
-    var deferred = new $.Deferred();
+    var deferred = $.Deferred();
     var projectRoot = ProjectManager.getProjectRoot().fullPath;
     nodeDomain.exec('getDiagnostics', projectRoot, fullPath, text)
       .then(function (report) {

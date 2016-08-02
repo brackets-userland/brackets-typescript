@@ -1,10 +1,12 @@
 'use strict';
 
+import * as log from './log';
+import ReadConfigError from './read-config-error';
+
 var _ = require('lodash');
 var fs = require('fs');
-var Glob = require('glob');
 var ts = require('typescript');
-var log = require('./log');
+var Glob = require('glob');
 var path = require('path');
 var Promise = require('bluebird');
 var escapeStringRegexp = require('escape-string-regexp');
@@ -19,31 +21,30 @@ function glob(pattern, options) {
   });
 }
 
-function fixFilename(fileName) {
+function fixFilename(fileName): string {
   return typeof fileName === 'string' ? fileName.replace(/\\/g, '/') : null;
-}
-
-function throwError(error) {
-  var err = new Error(error.messageText);
-  err.name = 'ReadConfigError';
-  err.code = error.code;
-  err.messageText = error.messageText;
-  throw err;
 }
 
 function readConfig(projectRoot) {
   var tsconfigPath = resolveSync(projectRoot);
-  var tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
   var tsconfigContents = fs.readFileSync(tsconfigPath, 'utf8');
 
   var rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, tsconfigContents);
   if (rawConfig.error) {
-    throwError(rawConfig.error);
+    throw new ReadConfigError(rawConfig.error.code, rawConfig.error.messageText);
   }
 
-  var settings = ts.convertCompilerOptionsFromJson(rawConfig.config.compilerOptions, tsconfigDir);
+  return rawConfig.config;
+}
+
+function readCompilerOptions(projectRoot) {
+  var tsconfigPath = resolveSync(projectRoot);
+  var tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
+  var rawConfig = readConfig(projectRoot);
+
+  var settings = ts.convertCompilerOptionsFromJson(rawConfig.compilerOptions, tsconfigDir);
   if (settings.errors && settings.errors.length > 0) {
-    throwError(settings.errors[0]);
+    throw new ReadConfigError(settings.errors[0].code, settings.errors[0].messageText);
   }
 
   return _.defaults(settings.options, ts.getDefaultCompilerOptions());
@@ -51,12 +52,24 @@ function readConfig(projectRoot) {
 
 function createHost(projectRoot) {
 
-  var files = [];
+  const files = [];
+
+  function addPackageJson(fileName: string, body: string): void {
+    let packageJson;
+    try {
+      packageJson = JSON.parse(body);
+    } catch (err) {
+      log.error(`Error parsing ${fileName}: ${err}`);
+      return;
+    }
+    if (typeof packageJson.typings === 'string') {
+      addFileSync(path.resolve(path.dirname(fileName), packageJson.typings));
+    }
+  }
 
   function addFile(fileName, body) {
-    // TODO: if package.json exist, we should parse it for information on typings and stuff
-    if (/\/package.json$/.test(fileName)) {
-      body = null;
+    if (body && /\/package.json$/.test(fileName)) {
+      return addPackageJson(fileName, body);
     }
     if (body == null) {
       if (!files[fileName]) {
@@ -111,7 +124,7 @@ function createHost(projectRoot) {
       return Object.keys(files);
     },
     getCompilationSettings: function () {
-      return readConfig(projectRoot);
+      return readCompilerOptions(projectRoot);
     },
     getDefaultLibFileName: function (options) {
       var fileName = fixFilename(ts.getDefaultLibFilePath(options));
@@ -137,15 +150,28 @@ function createHost(projectRoot) {
   };
 }
 
+function getFileMatcherPatterns(projectRoot: string, extensions: string[], excludes: string[], includes: string[]): FileMatcherPatterns {
+  const path: string = '/';
+  const useCaseSensitiveFileNames: boolean = true;
+  const currentDirectory: string = fixFilename(projectRoot);
+  return ts.getFileMatcherPatterns(path, extensions, excludes, includes, useCaseSensitiveFileNames, currentDirectory);
+}
+
 function getStuffForProject(projectRoot) {
   if (projects[projectRoot]) {
     return Promise.resolve(projects[projectRoot]);
   }
   var host = createHost(projectRoot);
   var languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
-  // TODO: maybe add all .ts, .tsx files from projectRoot into the host now + add watching notifications
-  // TODO: use ts.matchFiles to find files to include in the host
+
+  const config = readConfig(projectRoot);
+  const extensions: string[] = ['.ts', '.tsx'];
+  const includes: string[] = config.files;
+  const excludes: string[] = config.exclude;
+  const fileMatcherPatterns = getFileMatcherPatterns(projectRoot, extensions, excludes, includes);
+  // reimplement ts.matchFiles to find files to include in the host
   // https://github.com/Microsoft/TypeScript/blob/0c131fab68f9c8897679ffc2909a11f2b0455f99/src/compiler/core.ts#L1077
+
   return glob('./**/*.d.ts', { cwd: projectRoot, silent: true })
     .then(function (files) {
       return Promise.all(files.map(function (relativePath) {

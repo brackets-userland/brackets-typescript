@@ -18,7 +18,7 @@ define(function (require, exports, module) {
     if (implicitChar == null || !/^[\.\$_a-zA-Z0-9]$/.test(implicitChar)) {
       return;
     }
-    var deferred = new $.Deferred();
+    var deferred = $.Deferred();
     var projectRoot = ProjectManager.getProjectRoot().fullPath;
     var fullPath = this.editor.document.file.fullPath;
     var code = this.editor.document.getText();
