@@ -20,6 +20,19 @@ exports.init = function (_domainManager) {
 
   domainManager.registerCommand(
     domainName,
+    'fileChange', // command name
+    tsUtils.fileChange, // handler function
+    false, // is not async
+    'fileChange', // description
+    [
+      { name: 'fileChangeNotification', type: 'object' }
+    ], [
+      { name: 'processed', type: 'boolean' }
+    ]
+  );
+
+  domainManager.registerCommand(
+    domainName,
     'getDiagnostics', // command name
     tsUtils.getDiagnostics, // handler function
     true, // is async

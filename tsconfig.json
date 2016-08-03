@@ -10,7 +10,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": false,
     "noImplicitReturns": true,
-    "pretty": true,
+    "pretty": false,
     "removeComments": true,
     "strictNullChecks": false
   },

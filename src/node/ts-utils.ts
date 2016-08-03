@@ -202,6 +202,10 @@ function mapDiagnostics(diagnostics) {
   };
 }
 
+exports.fileChange = function(fileChangeNotification: FileChangeNotification) {
+  log.info('fileChangeNotification', JSON.stringify(fileChangeNotification));
+};
+
 exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, callback) {
   return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
