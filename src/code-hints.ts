@@ -16,7 +16,7 @@ define(function (require, exports, module) {
 
   TypeScriptHintProvider.prototype.getHints = function getHints(implicitChar) {
     if (implicitChar == null || !/^[\.\$_a-zA-Z0-9]$/.test(implicitChar)) {
-      return;
+      return null;
     }
     var deferred = $.Deferred();
     var projectRoot = ProjectManager.getProjectRoot().fullPath;

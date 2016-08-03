@@ -30,6 +30,7 @@ export function matchFilesInProject(projectRoot: string, patterns: FileMatcherPa
         ) {
           return name;
         }
+        return null;
       }).filter(x => x != null);
 
       return Promise.all(directories.map((directory: string) => {
