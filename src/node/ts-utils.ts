@@ -1,12 +1,12 @@
 'use strict';
 
+import _ = require('lodash');
 import * as log from './log';
 import Promise = require('bluebird');
 import ReadConfigError from './read-config-error';
 import { combinePaths, normalizePath } from './fs-utils';
 import { getFileMatcherPatterns, matchFilesInProject } from './file-matching';
 
-var _ = require('lodash');
 var fs = Promise.promisifyAll(require('fs'));
 var ts = require('typescript');
 var path = require('path');
