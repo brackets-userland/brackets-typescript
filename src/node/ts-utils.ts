@@ -9,19 +9,10 @@ import { getFileMatcherPatterns, matchFilesInProject } from './file-matching';
 var _ = require('lodash');
 var fs = Promise.promisifyAll(require('fs'));
 var ts = require('typescript');
-var Glob = require('glob');
 var path = require('path');
 var escapeStringRegexp = require('escape-string-regexp');
 var resolveSync = require('tsconfig').resolveSync;
 var projects = {};
-
-function glob(pattern, options) {
-  return new Promise(function (resolve, reject) {
-    Glob(pattern, options, function (err, files) {
-      return err ? reject(err) : resolve(files);
-    });
-  });
-}
 
 function readConfig(projectRoot) {
   var tsconfigPath = resolveSync(projectRoot);
