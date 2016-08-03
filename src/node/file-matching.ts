@@ -1,7 +1,7 @@
+import Promise = require('bluebird');
 import { fileExtensionIsAny, normalizePath, combinePaths, getFileSystemEntries } from './fs-utils';
 
 var ts = require('typescript');
-var Promise = require('bluebird');
 
 export function getFileMatcherPatterns(projectRoot: string, extensions: string[], excludes: string[], includes: string[]): FileMatcherPatterns {
   const path: string = '/';

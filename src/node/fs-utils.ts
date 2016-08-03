@@ -1,6 +1,7 @@
+import Promise = require('bluebird');
+
 const fs = require('fs');
 const path = require('path');
-const Promise = require('bluebird');
 
 export function endsWith(str: string, suffix: string): boolean {
   const expectedPos = str.length - suffix.length;

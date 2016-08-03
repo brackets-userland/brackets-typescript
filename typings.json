@@ -1,6 +1,8 @@
 {
   "name": "brackets-typescript",
-  "dependencies": {},
+  "dependencies": {
+    "bluebird": "registry:npm/bluebird#3.3.4+20160802085254"
+  },
   "globalDependencies": {
     "jquery": "registry:dt/jquery#1.10.0+20160704162008",
     "node": "registry:dt/node#0.10.1+20160720000508"
