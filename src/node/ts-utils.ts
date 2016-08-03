@@ -2,13 +2,15 @@
 
 import * as log from './log';
 import ReadConfigError from './read-config-error';
+import { combinePaths, normalizePath } from './fs-utils';
+import { getFileMatcherPatterns, matchFilesInProject } from './file-matching';
 
 var _ = require('lodash');
-var fs = require('fs');
+var Promise = require('bluebird');
+var fs = Promise.promisifyAll(require('fs'));
 var ts = require('typescript');
 var Glob = require('glob');
 var path = require('path');
-var Promise = require('bluebird');
 var escapeStringRegexp = require('escape-string-regexp');
 var resolveSync = require('tsconfig').resolveSync;
 var projects = {};
@@ -19,10 +21,6 @@ function glob(pattern, options) {
       return err ? reject(err) : resolve(files);
     });
   });
-}
-
-function fixFilename(fileName): string {
-  return typeof fileName === 'string' ? fileName.replace(/\\/g, '/') : null;
 }
 
 function readConfig(projectRoot) {
@@ -127,37 +125,31 @@ function createHost(projectRoot) {
       return readCompilerOptions(projectRoot);
     },
     getDefaultLibFileName: function (options) {
-      var fileName = fixFilename(ts.getDefaultLibFilePath(options));
+      var fileName = normalizePath(ts.getDefaultLibFilePath(options));
       addFileSync(fileName);
       return fileName;
     },
     addFile: addFile,
     getScriptIsOpen: function (fileName) {
-      fileName = fixFilename(fileName);
+      fileName = normalizePath(fileName);
       addFileSync(fileName);
       return files[fileName] && files[fileName].snap != null;
     },
     getScriptSnapshot: function (fileName) {
-      fileName = fixFilename(fileName);
+      fileName = normalizePath(fileName);
       addFileSync(fileName);
       return files[fileName] && files[fileName].snap;
     },
     getScriptVersion: function (fileName) {
-      fileName = fixFilename(fileName);
+      fileName = normalizePath(fileName);
       addFileSync(fileName);
       return files[fileName] && files[fileName].version.toString();
     }
   };
 }
 
-function getFileMatcherPatterns(projectRoot: string, extensions: string[], excludes: string[], includes: string[]): FileMatcherPatterns {
-  const path: string = '/';
-  const useCaseSensitiveFileNames: boolean = true;
-  const currentDirectory: string = fixFilename(projectRoot);
-  return ts.getFileMatcherPatterns(path, extensions, excludes, includes, useCaseSensitiveFileNames, currentDirectory);
-}
-
 function getStuffForProject(projectRoot) {
+  projectRoot = normalizePath(projectRoot);
   if (projects[projectRoot]) {
     return Promise.resolve(projects[projectRoot]);
   }
@@ -168,23 +160,25 @@ function getStuffForProject(projectRoot) {
   const extensions: string[] = ['.ts', '.tsx'];
   const includes: string[] = config.files;
   const excludes: string[] = config.exclude;
-  const fileMatcherPatterns = getFileMatcherPatterns(projectRoot, extensions, excludes, includes);
-  // reimplement ts.matchFiles to find files to include in the host
-  // https://github.com/Microsoft/TypeScript/blob/0c131fab68f9c8897679ffc2909a11f2b0455f99/src/compiler/core.ts#L1077
 
-  return glob('./**/*.d.ts', { cwd: projectRoot, silent: true })
-    .then(function (files) {
-      return Promise.all(files.map(function (relativePath) {
-        return host.$addFileAsync(fixFilename(path.resolve(projectRoot, relativePath)));
-      }));
-    })
-    .then(function () {
-      projects[projectRoot] = {
-        host: host,
-        languageService: languageService
-      };
-      return projects[projectRoot];
-    });
+  excludes.push('.git');
+  if (config.compilerOptions.outDir) {
+    excludes.push(config.compilerOptions.outDir);
+  }
+
+  const fileMatcherPatterns = getFileMatcherPatterns(projectRoot, extensions, excludes, includes);
+  return matchFilesInProject(projectRoot, fileMatcherPatterns, extensions).then(files => {
+    return Promise.all(files.map(function (relativePath) {
+      return host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
+    }));
+  }).then(function () {
+    projects[projectRoot] = {
+      host: host,
+      languageService: languageService,
+      fileMatcherPatterns: fileMatcherPatterns
+    };
+    return projects[projectRoot];
+  });
 }
 
 function mapDiagnostics(diagnostics) {
@@ -221,7 +215,7 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
   return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = fixFilename(path.relative(projectRoot, fullPath));
+    var relativePath = normalizePath(path.relative(projectRoot, fullPath));
     host.addFile(relativePath, code);
 
     var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(relativePath);
@@ -269,7 +263,7 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
   return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = fixFilename(path.relative(projectRoot, fullPath));
+    var relativePath = normalizePath(path.relative(projectRoot, fullPath));
     host.addFile(relativePath, code);
 
     var isMemberCompletion = false;
