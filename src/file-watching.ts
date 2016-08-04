@@ -6,6 +6,7 @@ define(function (require, exports, module) {
 
   module.exports = function () {
     FileSystem.on('change', function (evt, file) {
+      if (file == null) { return; }
       const notification: FileChangeNotification = {
         type: evt.type,
         fullPath: file.fullPath,
