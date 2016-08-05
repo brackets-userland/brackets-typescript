@@ -1,21 +1,21 @@
 'use strict';
 
 import _ = require('lodash');
-import * as log from './log';
+import fs = require('fs');
+import path = require('path');
 import Promise = require('bluebird');
 import ReadConfigError from './read-config-error';
+import * as log from './log';
 import { combinePaths, normalizePath } from './fs-utils';
 import { getFileMatcherPatterns, matchFilesInProject } from './file-matching';
 
-var fs = Promise.promisifyAll(require('fs'));
-var ts = require('typescript');
-var path = require('path');
-var escapeStringRegexp = require('escape-string-regexp');
-var resolveSync = require('tsconfig').resolveSync;
-var projects = {};
+const escapeStringRegexp = require('escape-string-regexp');
+const ts = require('typescript');
+const tsconfigResolveSync = require('tsconfig').resolveSync;
+const projects = {};
 
 function readConfig(projectRoot) {
-  var tsconfigPath = resolveSync(projectRoot);
+  var tsconfigPath = tsconfigResolveSync(projectRoot);
   var tsconfigContents = fs.readFileSync(tsconfigPath, 'utf8');
 
   var rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, tsconfigContents);
@@ -27,7 +27,7 @@ function readConfig(projectRoot) {
 }
 
 function readCompilerOptions(projectRoot) {
-  var tsconfigPath = resolveSync(projectRoot);
+  var tsconfigPath = tsconfigResolveSync(projectRoot);
   var tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
   var rawConfig = readConfig(projectRoot);
 
@@ -231,7 +231,7 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
   });
 };
 
-function mapCompletions(completions, currentWord) {
+function mapCompletions(completions: CompletionInfo, currentWord) {
   var entries = completions.entries || [];
   var hints = _.sortBy(entries, function (entry) {
     var sort = entry.sortText;
@@ -273,7 +273,7 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
       currentWord = match ? match[0] : null;
     }
 
-    var completions = languageService.getCompletionsAtPosition(relativePath, position, isMemberCompletion);
+    var completions: CompletionInfo = languageService.getCompletionsAtPosition(relativePath, position, isMemberCompletion);
     return callback(null, mapCompletions(completions, currentWord));
   }).catch(function (err) {
     if (err.name === 'ReadConfigError') {

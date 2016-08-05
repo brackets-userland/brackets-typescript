@@ -1,7 +1,9 @@
+import fs = require('fs');
+import path = require('path');
 import Promise = require('bluebird');
 
-const fs = require('fs');
-const path = require('path');
+const readdir = Promise.promisify(fs.readdir);
+const stat = Promise.promisify(fs.stat);
 
 export function endsWith(str: string, suffix: string): boolean {
   const expectedPos = str.length - suffix.length;
@@ -30,9 +32,9 @@ export function combinePaths(...paths: string[]): string {
 }
 
 export function getFileSystemEntries(dirPath) {
-  return fs.readdirAsync(dirPath).then((dirOrFiles: string[]) => {
+  return readdir(dirPath).then((dirOrFiles: string[]) => {
     return Promise.all(dirOrFiles.map((dirOrFile: string) => {
-      return fs.statAsync(path.join(dirPath, dirOrFile)).then((stat) => {
+      return stat(path.join(dirPath, dirOrFile)).then((stat) => {
         return {
           dirOrFile: dirOrFile,
           isFile: stat.isFile(),
