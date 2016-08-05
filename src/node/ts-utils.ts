@@ -7,7 +7,7 @@ import Promise = require('bluebird');
 import ReadConfigError from './read-config-error';
 import * as log from './log';
 import { combinePaths, normalizePath } from './fs-utils';
-import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData, isFileMatching, isDirectoryMatching } from './file-matching';
+import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData, isFileMatching, isDirectoryMatching, matchFilesInDirectory } from './file-matching';
 
 const escapeStringRegexp = require('escape-string-regexp');
 const ts = require('typescript');
@@ -208,18 +208,28 @@ function mapDiagnostics(diagnostics) {
   };
 }
 
-exports.fileChange = function(fileChangeNotification: FileChangeNotification) {
+exports.fileChange = function(fileChangeNotification: FileChangeNotification): void {
   getProjectRoots().forEach(projectRoot => {
     if (fileChangeNotification.fullPath.indexOf(projectRoot) !== 0) {
       // not in this project
       return;
     }
+
     const projectConfig = projects[projectRoot];
     const relativePath = '/' + fileChangeNotification.fullPath.substring(projectRoot.length);
+
     if (fileChangeNotification.isFile && isFileMatching(relativePath, projectConfig.fileMatcherData)) {
       projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
-    } else if (fileChangeNotification.isDirectory && isDirectoryMatching(relativePath, projectConfig.fileMatcherData)) {
-      // todo: console.log('matched directory', relativePath);
+      return;
+    }
+
+    if (fileChangeNotification.isDirectory && isDirectoryMatching(relativePath, projectConfig.fileMatcherData)) {
+      matchFilesInDirectory(relativePath, combinePaths(projectRoot, relativePath), projectConfig.fileMatcherData).then(files => {
+        files.forEach(function (file) {
+          projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, file)));
+        });
+      });
+      return;
     }
   });
 };
