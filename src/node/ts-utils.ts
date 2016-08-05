@@ -10,6 +10,7 @@ import { combinePaths, normalizePath } from './fs-utils';
 import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData, isFileMatching, isDirectoryMatching, matchFilesInDirectory } from './file-matching';
 
 const escapeStringRegexp = require('escape-string-regexp');
+const readFile: (path: string, encoding: string) => Promise<any> = Promise.promisify(fs.readFile);
 const ts = require('typescript');
 const tsconfigResolveSync = require('tsconfig').resolveSync;
 const projects = {};
@@ -143,6 +144,16 @@ function createHost(projectRoot) {
   };
 }
 
+function getTsLintConfig(projectRoot: string) {
+  const tsLintConfigPath = path.join(projectRoot, 'tslint.json');
+  return readFile(tsLintConfigPath, 'utf8').then(contents => {
+    return JSON.parse(contents);
+  }).catch(err => {
+    log.error(`Error reading TSLint config: ${err}`);
+    return null;
+  });
+}
+
 function getStuffForProject(projectRoot) {
   projectRoot = normalizePath(projectRoot);
   if (projects[projectRoot]) {
@@ -167,12 +178,14 @@ function getStuffForProject(projectRoot) {
     return Promise.all(files.map(function (relativePath) {
       return host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
     }));
-  }).then(function () {
+  }).then(() => getTsLintConfig(projectRoot))
+    .then(tsLintConfig => {
     projects[projectRoot] = {
       host,
       languageService,
       fileMatcherPatterns,
-      fileMatcherData
+      fileMatcherData,
+      tsLintConfig
     };
     return projects[projectRoot];
   });
