@@ -7,12 +7,16 @@ import Promise = require('bluebird');
 import ReadConfigError from './read-config-error';
 import * as log from './log';
 import { combinePaths, normalizePath } from './fs-utils';
-import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData } from './file-matching';
+import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData, isFileMatching, isDirectoryMatching } from './file-matching';
 
 const escapeStringRegexp = require('escape-string-regexp');
 const ts = require('typescript');
 const tsconfigResolveSync = require('tsconfig').resolveSync;
 const projects = {};
+
+function getProjectRoots(): string[] {
+  return Object.keys(projects);
+}
 
 function readConfig(projectRoot) {
   var tsconfigPath = tsconfigResolveSync(projectRoot);
@@ -205,7 +209,19 @@ function mapDiagnostics(diagnostics) {
 }
 
 exports.fileChange = function(fileChangeNotification: FileChangeNotification) {
-  log.info('fileChangeNotification', JSON.stringify(fileChangeNotification));
+  getProjectRoots().forEach(projectRoot => {
+    if (fileChangeNotification.fullPath.indexOf(projectRoot) !== 0) {
+      // not in this project
+      return;
+    }
+    const projectConfig = projects[projectRoot];
+    const projectPath = '/' + fileChangeNotification.fullPath.substring(projectRoot.length);
+    if (fileChangeNotification.isFile && isFileMatching(projectPath, projectConfig.fileMatcherData)) {
+      // todo: console.log('matched file', projectPath);
+    } else if (fileChangeNotification.isDirectory && isDirectoryMatching(projectPath, projectConfig.fileMatcherData)) {
+      // todo: console.log('matched directory', projectPath);
+    }
+  });
 };
 
 exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, callback) {
