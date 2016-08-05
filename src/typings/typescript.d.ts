@@ -17,3 +17,10 @@ interface FileMatcherPatterns {
   excludePattern: string;
   basePaths: string[];
 }
+
+interface FileMatcherData {
+  includeFileRegex: RegExp;
+  includeDirectoryRegex: RegExp;
+  excludeRegex: RegExp;
+  extensions: string[]
+}

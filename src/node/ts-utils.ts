@@ -7,7 +7,7 @@ import Promise = require('bluebird');
 import ReadConfigError from './read-config-error';
 import * as log from './log';
 import { combinePaths, normalizePath } from './fs-utils';
-import { getFileMatcherPatterns, matchFilesInProject } from './file-matching';
+import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData } from './file-matching';
 
 const escapeStringRegexp = require('escape-string-regexp');
 const ts = require('typescript');
@@ -158,15 +158,17 @@ function getStuffForProject(projectRoot) {
   }
 
   const fileMatcherPatterns = getFileMatcherPatterns(projectRoot, extensions, excludes, includes);
-  return matchFilesInProject(projectRoot, fileMatcherPatterns, extensions).then(files => {
+  const fileMatcherData = getFileMatcherData(fileMatcherPatterns, extensions);
+  return matchFilesInProject(projectRoot, fileMatcherPatterns.basePaths, fileMatcherData).then(files => {
     return Promise.all(files.map(function (relativePath) {
       return host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
     }));
   }).then(function () {
     projects[projectRoot] = {
-      host: host,
-      languageService: languageService,
-      fileMatcherPatterns: fileMatcherPatterns
+      host,
+      languageService,
+      fileMatcherPatterns,
+      fileMatcherData
     };
     return projects[projectRoot];
   });

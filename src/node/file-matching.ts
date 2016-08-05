@@ -1,55 +1,71 @@
 import Promise = require('bluebird');
 import { fileExtensionIsAny, normalizePath, combinePaths, getFileSystemEntries } from './fs-utils';
 
-var ts = require('typescript');
+const ts = require('typescript');
+const useCaseSensitiveFileNames: boolean = true;
+const regexFlag: string = useCaseSensitiveFileNames ? "" : "i";
 
 export function getFileMatcherPatterns(projectRoot: string, extensions: string[], excludes: string[], includes: string[]): FileMatcherPatterns {
   const path: string = '/';
-  const useCaseSensitiveFileNames: boolean = true;
   const currentDirectory: string = normalizePath(projectRoot);
   return ts.getFileMatcherPatterns(path, extensions, excludes, includes, useCaseSensitiveFileNames, currentDirectory);
 }
 
-export function matchFilesInProject(projectRoot: string, patterns: FileMatcherPatterns, extensions: string[]) {
-  const useCaseSensitiveFileNames: boolean = true;
-  const regexFlag = useCaseSensitiveFileNames ? "" : "i";
-  const includeFileRegex = patterns.includeFilePattern && new RegExp(patterns.includeFilePattern, regexFlag);
-  const includeDirectoryRegex = patterns.includeDirectoryPattern && new RegExp(patterns.includeDirectoryPattern, regexFlag);
-  const excludeRegex = patterns.excludePattern && new RegExp(patterns.excludePattern, regexFlag);
+export function getFileMatcherData(patterns: FileMatcherPatterns, extensions: string[]): FileMatcherData {
+  return {
+    includeFileRegex: patterns.includeFilePattern && new RegExp(patterns.includeFilePattern, regexFlag),
+    includeDirectoryRegex: patterns.includeDirectoryPattern && new RegExp(patterns.includeDirectoryPattern, regexFlag),
+    excludeRegex: patterns.excludePattern && new RegExp(patterns.excludePattern, regexFlag),
+    extensions
+  };
+}
 
-  function visitDirectory(projectPath: string, absolutePath: string) {
-    return getFileSystemEntries(absolutePath).then((entries) => {
-      const { files, directories } = entries;
-
-      const matchedFiles = files.map((file: string) => {
-        const name = combinePaths(projectPath, file);
-        if (
-          (!extensions || fileExtensionIsAny(name, extensions)) &&
-          (!includeFileRegex || includeFileRegex.test(name)) &&
-          (!excludeRegex || !excludeRegex.test(name))
-        ) {
-          return name;
-        }
-        return null;
-      }).filter(x => x != null);
-
-      return Promise.all(directories.map((directory: string) => {
-        const name = combinePaths(projectPath, directory);
-        if (
-          (!includeDirectoryRegex || includeDirectoryRegex.test(name)) &&
-          (!excludeRegex || !excludeRegex.test(name))
-        ) {
-          const absoluteName = combinePaths(absolutePath, directory);
-          return visitDirectory(name, absoluteName);
-        }
-      })).then(visitDirectoryResults => {
-        return matchedFiles.concat(...visitDirectoryResults.filter(x => x != null));
-      });
-    });
+export function isFileMatching(name: string, fileMatcherData: FileMatcherData): boolean {
+  if (
+    (!fileMatcherData.extensions || fileExtensionIsAny(name, fileMatcherData.extensions)) &&
+    (!fileMatcherData.includeFileRegex || fileMatcherData.includeFileRegex.test(name)) &&
+    (!fileMatcherData.excludeRegex || !fileMatcherData.excludeRegex.test(name))
+  ) {
+    return true;
   }
+  return false;
+}
 
-  return Promise.all(patterns.basePaths.map(function (basePath) {
-    return visitDirectory(basePath, combinePaths(projectRoot, basePath));
+export function isDirectoryMatching(name: string, fileMatcherData: FileMatcherData): boolean {
+  if (
+    (!fileMatcherData.includeDirectoryRegex || fileMatcherData.includeDirectoryRegex.test(name)) &&
+    (!fileMatcherData.excludeRegex || !fileMatcherData.excludeRegex.test(name))
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function matchFilesInDirectory(projectPath: string, absolutePath: string, fileMatcherData: FileMatcherData): Promise<string[]> {
+  return getFileSystemEntries(absolutePath).then((entries) => {
+    const { files, directories } = entries;
+
+    const matchedFiles = files.map((file: string) => {
+      const name = combinePaths(projectPath, file);
+      return isFileMatching(name, fileMatcherData) ? name : null;
+    }).filter(x => x != null);
+
+    return Promise.all(directories.map((directory: string) => {
+      const name = combinePaths(projectPath, directory);
+      if (isDirectoryMatching(name, fileMatcherData)) {
+        const absoluteName = combinePaths(absolutePath, directory);
+        return matchFilesInDirectory(name, absoluteName, fileMatcherData);
+      }
+      return null;
+    })).then(visitDirectoryResults => {
+      return matchedFiles.concat(...visitDirectoryResults.filter(x => x != null));
+    });
+  });
+}
+
+export function matchFilesInProject(projectRoot: string, basePaths: string[], fileMatcherData: FileMatcherData): Promise<string[]> {
+  return Promise.all(basePaths.map(function (basePath) {
+    return matchFilesInDirectory(basePath, combinePaths(projectRoot, basePath), fileMatcherData);
   })).then(function (results: Array<Array<string>>) {
     return [].concat(...results);
   });

@@ -15,12 +15,7 @@ export function fileExtensionIs(path: string, extension: string): boolean {
 }
 
 export function fileExtensionIsAny(path: string, extensions: string[]): boolean {
-  for (const extension of extensions) {
-    if (fileExtensionIs(path, extension)) {
-      return true;
-    }
-  }
-  return false;
+  return extensions.some(extension => fileExtensionIs(path, extension));
 }
 
 export function normalizePath(dirOrFilePath: string): string {
