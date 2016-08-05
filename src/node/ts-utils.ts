@@ -215,11 +215,11 @@ exports.fileChange = function(fileChangeNotification: FileChangeNotification) {
       return;
     }
     const projectConfig = projects[projectRoot];
-    const projectPath = '/' + fileChangeNotification.fullPath.substring(projectRoot.length);
-    if (fileChangeNotification.isFile && isFileMatching(projectPath, projectConfig.fileMatcherData)) {
-      // todo: console.log('matched file', projectPath);
-    } else if (fileChangeNotification.isDirectory && isDirectoryMatching(projectPath, projectConfig.fileMatcherData)) {
-      // todo: console.log('matched directory', projectPath);
+    const relativePath = '/' + fileChangeNotification.fullPath.substring(projectRoot.length);
+    if (fileChangeNotification.isFile && isFileMatching(relativePath, projectConfig.fileMatcherData)) {
+      projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
+    } else if (fileChangeNotification.isDirectory && isDirectoryMatching(relativePath, projectConfig.fileMatcherData)) {
+      // todo: console.log('matched directory', relativePath);
     }
   });
 };
