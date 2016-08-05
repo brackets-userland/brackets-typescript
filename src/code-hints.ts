@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   'use strict';
 
   var CodeHintManager = brackets.getModule('editor/CodeHintManager');
+  var LanguageManager = brackets.getModule('language/LanguageManager');
   var ProjectManager = brackets.getModule('project/ProjectManager');
   var nodeDomain = require('./node-domain');
 
@@ -50,7 +51,11 @@ define(function (require, exports, module) {
   };
 
   module.exports = function () {
-    CodeHintManager.registerHintProvider(new TypeScriptHintProvider(), ['typescript', 'tsx'], 0);
+    var langIds = ['ts', 'tsx'].map(function (extension) {
+      var language = LanguageManager.getLanguageForExtension(extension);
+      return language ? language.getId() : null;
+    }).filter(x => x != null);
+    CodeHintManager.registerHintProvider(new TypeScriptHintProvider(), langIds, 0);
   };
 
 });

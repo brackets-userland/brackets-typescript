@@ -6,23 +6,20 @@ define(function (require, exports, module) {
 
   function defineLanguage(languageId, languageName, extension) {
     var existingDefinition = LanguageManager.getLanguageForExtension(extension);
-    if (existingDefinition) {
-      log.error(extension + ' extension language already defined: ' + JSON.stringify(existingDefinition));
-      module.exports = false;
-      return;
+    if (!existingDefinition) {
+      LanguageManager.defineLanguage(languageId, {
+        name: languageName,
+        mode: ['javascript', 'text/typescript'],
+        fileExtensions: [extension],
+        blockComment: ['/*', '*/'],
+        lineComment: ['//']
+      });
     }
-
-    LanguageManager.defineLanguage(languageId, {
-      name: languageName,
-      mode: ['javascript', 'text/typescript'],
-      fileExtensions: [extension],
-      blockComment: ['/*', '*/'],
-      lineComment: ['//']
-    });
   }
 
-  module.exports = true;
-  defineLanguage('typescript', 'TypeScript', 'ts');
-  defineLanguage('tsx', 'TypeScript', 'tsx');
+  module.exports = function () {
+    defineLanguage('typescript', 'TypeScript', 'ts');
+    defineLanguage('tsx', 'TypeScript', 'tsx');
+  };
 
 });

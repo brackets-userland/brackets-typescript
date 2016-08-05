@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   'use strict';
 
   var CodeInspection = brackets.getModule('language/CodeInspection');
+  var LanguageManager = brackets.getModule('language/LanguageManager');
   var ProjectManager = brackets.getModule('project/ProjectManager');
   var nodeDomain = require('./node-domain');
   var LINTER_NAME = 'TypeScript';
@@ -23,8 +24,9 @@ define(function (require, exports, module) {
   }
 
   module.exports = function () {
-    ['typescript', 'tsx'].forEach(function (langId) {
-      CodeInspection.register(langId, {
+    ['ts', 'tsx'].forEach(function (extension) {
+      var language = LanguageManager.getLanguageForExtension(extension);
+      language && CodeInspection.register(language.getId(), {
         name: LINTER_NAME,
         scanFile: handleScanFile,
         scanFileAsync: handleScanFileAsync
