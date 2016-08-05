@@ -13,6 +13,7 @@ const escapeStringRegexp = require('escape-string-regexp');
 const readFile: (path: string, encoding: string) => Promise<any> = Promise.promisify(fs.readFile);
 const ts = require('typescript');
 const tsconfigResolveSync = require('tsconfig').resolveSync;
+const TSLint = require('tslint');
 const projects = {};
 
 function getProjectRoots(): string[] {
@@ -254,15 +255,30 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
     var relativePath = normalizePath(path.relative(projectRoot, fullPath));
     host.addFile(relativePath, code);
 
+    // run compiler diagnostic first
     var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(relativePath);
     if (compilerDiagnostics.length > 0) {
       return callback(null, mapDiagnostics(compilerDiagnostics));
     }
 
+    // run typescript diagnostics second
     var semanticDiagnostics = languageService.getSemanticDiagnostics(relativePath);
     var syntaxDiagnostics = languageService.getSyntacticDiagnostics(relativePath);
     var diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
-    return callback(null, mapDiagnostics(diagnostics));
+    if (diagnostics.length > 0) {
+      return callback(null, mapDiagnostics(diagnostics));
+    }
+
+    // if config for TSLint is present in the project, run TSLint checking
+//    if (obj.tsLintConfig) {
+//      const program = languageService.getProgram();
+//      const tsLinter = new TSLint(relativePath, code, obj.tsLintConfig, program);
+//      const results = tsLinter.lint();
+//      log.info(results, JSON.stringify(results));
+//    }
+
+    // no errors found
+    return callback(null, { errors: [] });
   }).catch(function (err) {
     if (err.name === 'ReadConfigError') {
       return callback(null, mapDiagnostics([ err ]));

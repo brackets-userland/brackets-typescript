@@ -19,11 +19,31 @@ export function fileExtensionIsAny(path: string, extensions: string[]): boolean 
 }
 
 export function normalizePath(dirOrFilePath: string): string {
-  return typeof dirOrFilePath === 'string' ? dirOrFilePath.replace(/\\/g, '/') : dirOrFilePath;
+  return dirOrFilePath.replace(/\\/g, '/');
+}
+
+export function normalizeRelativePath(dirOrFilePath: string): string {
+  const normalized = normalizePath(dirOrFilePath);
+  return normalized[0] === '/' ? normalized.substring(1) : normalized;
 }
 
 export function combinePaths(...paths: string[]): string {
   return normalizePath(path.join(...paths));
+}
+
+export function isAbsolutePath(fullPath): boolean {
+  return (fullPath[0] === "/" || (fullPath[1] === ":" && fullPath[2] === "/"));
+}
+
+export function ensureRelative(dirOrFilePath: string, rootPath: string): string {
+  if (isAbsolutePath(dirOrFilePath)) {
+    if (dirOrFilePath.indexOf(rootPath) === 0) {
+      return dirOrFilePath.substring(rootPath.length);
+    } else {
+      return null;
+    }
+  }
+  return dirOrFilePath;
 }
 
 export function getFileSystemEntries(dirPath) {
