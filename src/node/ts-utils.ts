@@ -6,7 +6,7 @@ import path = require('path');
 import Promise = require('bluebird');
 import ReadConfigError from './read-config-error';
 import * as log from './log';
-import { combinePaths, normalizePath } from './fs-utils';
+import { combinePaths, normalizePath, isAbsolutePath } from './fs-utils';
 import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData, isFileMatching, isDirectoryMatching, matchFilesInDirectory } from './file-matching';
 
 const escapeStringRegexp = require('escape-string-regexp');
@@ -62,48 +62,53 @@ function createHost(projectRoot) {
     }
   }
 
-  function addFile(fileName, body) {
-    if (body && /\/package.json$/.test(fileName)) {
-      return addPackageJson(fileName, body);
+  function addFile(absolutePath: string, body?: string): void {
+    if (!isAbsolutePath(absolutePath)) {
+      var err = new Error(`addFile should receive : ${absolutePath}`);
+      log.error(err.stack);
+    }
+    if (body && /\/package.json$/.test(absolutePath)) {
+      addPackageJson(absolutePath, body);
+      return;
     }
     if (body == null) {
-      if (!files[fileName]) {
-        files[fileName] = { version: 1, snap: null };
+      if (!files[absolutePath]) {
+        files[absolutePath] = { version: 1, snap: null };
       }
       return;
     }
     var snap = ts.ScriptSnapshot.fromString(body);
-    if (files[fileName]) {
-      files[fileName].version += 1;
-      files[fileName].snap = snap;
+    if (files[absolutePath]) {
+      files[absolutePath].version += 1;
+      files[absolutePath].snap = snap;
     } else {
-      files[fileName] = { version: 1, snap: snap };
+      files[absolutePath] = { version: 1, snap: snap };
     }
   }
 
-  function addFileSync(fileName) {
-    if (files[fileName]) {
+  function addFileSync(absolutePath: string): void {
+    if (files[absolutePath]) {
       return;
     }
     var contents = null;
     try {
-      contents = fs.readFileSync(fileName, 'utf8');
+      contents = fs.readFileSync(absolutePath, 'utf8');
     } catch (ignoreErr) {
-      // log.error('Cannot open file (' + err.code + '): ' + fileName);
+      // log.error('Cannot open file (' + err.code + '): ' + absolutePath);
     }
-    addFile(fileName, contents);
+    addFile(absolutePath, contents);
   }
 
-  function addFileAsync(fileName) {
+  function addFileAsync(absolutePath: string): Promise<any> {
     return new Promise(function (resolve, reject) {
-      if (files[fileName]) {
+      if (files[absolutePath]) {
         return resolve();
       }
-      fs.readFile(fileName, 'utf8', function (err, contents) {
+      fs.readFile(absolutePath, 'utf8', function (err, contents) {
         if (err) {
-          log.error('Cannot open file (' + err.code + '): ' + fileName);
+          log.error('Cannot open file (' + err.code + '): ' + absolutePath);
         }
-        addFile(fileName, contents || null);
+        addFile(absolutePath, contents || null);
         return resolve();
       });
     });
@@ -249,21 +254,20 @@ exports.fileChange = function(fileChangeNotification: FileChangeNotification): v
 };
 
 exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, callback) {
-  return getStuffForProject(projectRoot).then(function (obj) {
+  return getStuffForProject(projectRoot).then(function _getDiagnostics(obj) {
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = normalizePath(path.relative(projectRoot, fullPath));
-    host.addFile(relativePath, code);
+    host.addFile(fullPath, code);
 
     // run compiler diagnostic first
-    var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(relativePath);
+    var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(fullPath);
     if (compilerDiagnostics.length > 0) {
       return callback(null, mapDiagnostics(compilerDiagnostics));
     }
 
     // run typescript diagnostics second
-    var semanticDiagnostics = languageService.getSemanticDiagnostics(relativePath);
-    var syntaxDiagnostics = languageService.getSyntacticDiagnostics(relativePath);
+    var semanticDiagnostics = languageService.getSemanticDiagnostics(fullPath);
+    var syntaxDiagnostics = languageService.getSyntacticDiagnostics(fullPath);
     var diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
     if (diagnostics.length > 0) {
       return callback(null, mapDiagnostics(diagnostics));
@@ -272,7 +276,7 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
     // if config for TSLint is present in the project, run TSLint checking
 //    if (obj.tsLintConfig) {
 //      const program = languageService.getProgram();
-//      const tsLinter = new TSLint(relativePath, code, obj.tsLintConfig, program);
+//      const tsLinter = new TSLint(fullPath, code, obj.tsLintConfig, program);
 //      const results = tsLinter.lint();
 //      log.info(results, JSON.stringify(results));
 //    }
@@ -315,8 +319,7 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
   return getStuffForProject(projectRoot).then(function (obj) {
     var host = obj.host;
     var languageService = obj.languageService;
-    var relativePath = normalizePath(path.relative(projectRoot, fullPath));
-    host.addFile(relativePath, code);
+    host.addFile(fullPath, code);
 
     var isMemberCompletion = false;
     var currentWord = null;
@@ -330,7 +333,7 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
       currentWord = match ? match[0] : null;
     }
 
-    var completions: CompletionInfo = languageService.getCompletionsAtPosition(relativePath, position, isMemberCompletion);
+    var completions: CompletionInfo = languageService.getCompletionsAtPosition(fullPath, position, isMemberCompletion);
     return callback(null, mapCompletions(completions, currentWord));
   }).catch(function (err) {
     if (err.name === 'ReadConfigError') {
