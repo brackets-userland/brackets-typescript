@@ -150,14 +150,9 @@ function createHost(projectRoot) {
   };
 }
 
-function getTsLintConfig(projectRoot: string) {
-  const tsLintConfigPath = path.join(projectRoot, 'tslint.json');
-  return readFile(tsLintConfigPath, 'utf8').then(contents => {
-    return JSON.parse(contents);
-  }).catch(err => {
-    log.error(`Error reading TSLint config: ${err}`);
-    return null;
-  });
+function getTsLintConfig(projectRoot: string): IConfigurationFile {
+  const tsLintConfigPath = TSLint.findConfigurationPath(null, projectRoot);
+  return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
 
 function getStuffForProject(projectRoot) {
@@ -184,14 +179,13 @@ function getStuffForProject(projectRoot) {
     return Promise.all(files.map(function (relativePath) {
       return host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
     }));
-  }).then(() => getTsLintConfig(projectRoot))
-    .then(tsLintConfig => {
+  }).then(() => {
     projects[projectRoot] = {
       host,
       languageService,
       fileMatcherPatterns,
       fileMatcherData,
-      tsLintConfig
+      tsLintConfig: getTsLintConfig(projectRoot)
     };
     return projects[projectRoot];
   });
@@ -273,13 +267,21 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
       return callback(null, mapDiagnostics(diagnostics));
     }
 
+    /*
     // if config for TSLint is present in the project, run TSLint checking
-//    if (obj.tsLintConfig) {
-//      const program = languageService.getProgram();
-//      const tsLinter = new TSLint(fullPath, code, obj.tsLintConfig, program);
-//      const results = tsLinter.lint();
-//      log.info(results, JSON.stringify(results));
-//    }
+    if (obj.tsLintConfig) {
+      try {
+        const program = languageService.getProgram();
+        const tsLinter = new TSLint(fullPath, code, {
+          configuration: obj.tsLintConfig
+        }, program);
+        const results = tsLinter.lint();
+        log.info(`TODO: process TSLint results: ${JSON.stringify(results)}`);
+      } catch (err) {
+        log.info(`TSLint failure: ${err}`);
+      }
+    }
+    */
 
     // no errors found
     return callback(null, { errors: [] });
@@ -293,7 +295,8 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
 };
 
 function mapCompletions(completions: CompletionInfo, currentWord) {
-  var entries = completions.entries || [];
+  const entries = _.get(completions, 'entries', []);
+
   var hints = _.sortBy(entries, function (entry) {
     var sort = entry.sortText;
     if (currentWord) {
