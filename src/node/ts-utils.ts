@@ -316,7 +316,7 @@ function mapCompletions(completions: CompletionInfo, currentWord) {
 }
 
 exports.getCompletions = function getCompletions(projectRoot, fullPath, code, position, callback) {
-  return getStuffForProject(projectRoot).then(function (obj) {
+  return getStuffForProject(projectRoot).then(function _getCompletions(obj) {
     var host = obj.host;
     var languageService = obj.languageService;
     host.addFile(fullPath, code);
