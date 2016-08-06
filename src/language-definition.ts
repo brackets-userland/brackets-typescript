@@ -1,12 +1,9 @@
-define(function (require, exports, module) {
-  'use strict';
+define((require, exports, module) => {
 
-  var LanguageManager = brackets.getModule('language/LanguageManager');
-  var log = require('./log');
+  const LanguageManager = brackets.getModule('language/LanguageManager');
 
   function defineLanguage(languageId, languageName, extension) {
-    var existingDefinition = LanguageManager.getLanguageForExtension(extension);
-    if (!existingDefinition) {
+    if (!LanguageManager.getLanguageForExtension(extension)) {
       LanguageManager.defineLanguage(languageId, {
         name: languageName,
         mode: ['javascript', 'text/typescript'],

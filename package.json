@@ -43,6 +43,7 @@
     "gulp-eslint": "2.x",
     "gulp-util": "3.x",
     "through2": "0.x",
+    "typescript-eslint-parser": "latest",
     "typings": "1.x"
   },
   "engines": {
