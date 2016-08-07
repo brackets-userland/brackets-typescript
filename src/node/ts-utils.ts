@@ -8,14 +8,13 @@ import ReadConfigError from './read-config-error';
 import * as log from './log';
 import { combinePaths, normalizePath, isAbsolutePath } from './fs-utils';
 import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData, isFileMatching, isDirectoryMatching, matchFilesInDirectory } from './file-matching';
-import { IConfigurationFile, ILinterOptionsRaw, LintResult, mapLintFailures } from './tslint-utils';
+import { IConfigurationFile, executeTsLint } from './tslint-utils';
 
 const escapeStringRegexp = require('escape-string-regexp');
 const readFile: (path: string, encoding: string) => Promise<any> = Promise.promisify(fs.readFile);
 const ts = require('typescript');
 const tsconfigResolveSync = require('tsconfig').resolveSync;
 const TSLint = require('tslint');
-const CircularJSON = require('circular-json');
 const projects = {};
 
 function getProjectRoots(): string[] {
@@ -271,18 +270,9 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
 
     // if config for TSLint is present in the project, run TSLint checking
     if (obj.tsLintConfig) {
-      try {
-        const program = languageService.getProgram();
-        const options: ILinterOptionsRaw = {
-          configuration: obj.tsLintConfig
-        };
-        const tsLinter = new TSLint(fullPath, code, options, program);
-        const result: LintResult = tsLinter.lint();
-        if (result.failureCount > 0 && result.failures.length > 0) {
-          return callback(null, mapLintFailures(result.failures));
-        }
-      } catch (err) {
-        log.info(`TSLint failure: ${err.stack || err}`);
+      let errors = executeTsLint(fullPath, code, obj.tsLintConfig, languageService);
+      if (errors.length > 0) {
+        return callback(null, { errors });
       }
     }
 
