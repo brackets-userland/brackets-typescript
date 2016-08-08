@@ -1,4 +1,4 @@
-# brackets-typescript
+# brackets-typescript [![Build Status](https://travis-ci.org/zaggino/brackets-typescript.svg?branch=master)](https://travis-ci.org/zaggino/brackets-typescript)
 
 Brackets extension which provides support for working with TypeScript.
 
