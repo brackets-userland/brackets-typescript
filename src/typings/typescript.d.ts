@@ -22,5 +22,5 @@ interface FileMatcherData {
   includeFileRegex: RegExp;
   includeDirectoryRegex: RegExp;
   excludeRegex: RegExp;
-  extensions: string[]
+  extensions: string[];
 }

@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   'use strict';
 
-  const FileSystem = brackets.getModule("filesystem/FileSystem")
+  const FileSystem = brackets.getModule('filesystem/FileSystem');
   const nodeDomain = require('./node-domain');
 
   function handleFileSystemChange(evt, file) {

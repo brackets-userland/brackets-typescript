@@ -1,22 +1,13 @@
 const TSLint = require('tslint');
 
-export interface IConfigurationFile {
-    extends?: string | string[];
-    linterOptions?: {
-        typeCheck?: boolean,
-    };
-    rulesDirectory?: string | string[];
-    rules?: any;
-}
-
-export interface ILinterOptionsRaw {
+interface ILinterOptionsRaw {
     configuration?: any;
     formatter?: string;
     formattersDirectory?: string;
     rulesDirectory?: string | string[];
 }
 
-export interface LintResult {
+interface ILintResult {
     failureCount: number;
     failures: Array<any>;
     format: string;
@@ -43,7 +34,7 @@ export function executeTsLint(fullPath, code, tsLintConfig, languageService): Ar
       configuration: tsLintConfig
     };
     const tsLinter = new TSLint(fullPath, code, options, program);
-    const result: LintResult = tsLinter.lint();
+    const result: ILintResult = tsLinter.lint();
     return mapLintFailures(result.failures);
   } catch (err) {
     return [{

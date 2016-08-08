@@ -4,11 +4,14 @@ import _ = require('lodash');
 import fs = require('fs');
 import path = require('path');
 import Promise = require('bluebird');
-import ReadConfigError from './read-config-error';
+import {
+  getFileMatcherData, getFileMatcherPatterns, isDirectoryMatching,
+  isFileMatching, matchFilesInDirectory, matchFilesInProject
+} from './file-matching';
+import { combinePaths, isAbsolutePath, normalizePath } from './fs-utils';
 import * as log from './log';
-import { combinePaths, normalizePath, isAbsolutePath } from './fs-utils';
-import { getFileMatcherPatterns, matchFilesInProject, getFileMatcherData, isFileMatching, isDirectoryMatching, matchFilesInDirectory } from './file-matching';
-import { IConfigurationFile, executeTsLint } from './tslint-utils';
+import ReadConfigError from './read-config-error';
+import { executeTsLint } from './tslint-utils';
 
 const escapeStringRegexp = require('escape-string-regexp');
 const readFile: (path: string, encoding: string) => Promise<any> = Promise.promisify(fs.readFile);
@@ -17,15 +20,24 @@ const tsconfigResolveSync = require('tsconfig').resolveSync;
 const TSLint = require('tslint');
 const projects = {};
 
+interface IConfigurationFile {
+  extends?: string | string[];
+  linterOptions?: {
+      typeCheck?: boolean,
+  };
+  rulesDirectory?: string | string[];
+  rules?: any;
+}
+
 function getProjectRoots(): string[] {
   return Object.keys(projects);
 }
 
 function readConfig(projectRoot) {
-  var tsconfigPath = tsconfigResolveSync(projectRoot);
-  var tsconfigContents = fs.readFileSync(tsconfigPath, 'utf8');
+  const tsconfigPath = tsconfigResolveSync(projectRoot);
+  const tsconfigContents = fs.readFileSync(tsconfigPath, 'utf8');
 
-  var rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, tsconfigContents);
+  const rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, tsconfigContents);
   if (rawConfig.error) {
     throw new ReadConfigError(rawConfig.error.code, rawConfig.error.messageText);
   }
@@ -34,11 +46,11 @@ function readConfig(projectRoot) {
 }
 
 function readCompilerOptions(projectRoot) {
-  var tsconfigPath = tsconfigResolveSync(projectRoot);
-  var tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
-  var rawConfig = readConfig(projectRoot);
+  const tsconfigPath = tsconfigResolveSync(projectRoot);
+  const tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
+  const rawConfig = readConfig(projectRoot);
 
-  var settings = ts.convertCompilerOptionsFromJson(rawConfig.compilerOptions, tsconfigDir);
+  const settings = ts.convertCompilerOptionsFromJson(rawConfig.compilerOptions, tsconfigDir);
   if (settings.errors && settings.errors.length > 0) {
     throw new ReadConfigError(settings.errors[0].code, settings.errors[0].messageText);
   }
@@ -65,7 +77,7 @@ function createHost(projectRoot) {
 
   function addFile(absolutePath: string, body?: string): void {
     if (!isAbsolutePath(absolutePath)) {
-      var err = new Error(`addFile should receive : ${absolutePath}`);
+      const err = new Error(`addFile should receive : ${absolutePath}`);
       log.error(err.stack);
     }
     if (body && /\/package.json$/.test(absolutePath)) {
@@ -74,16 +86,16 @@ function createHost(projectRoot) {
     }
     if (body == null) {
       if (!files[absolutePath]) {
-        files[absolutePath] = { version: 1, snap: null };
+        files[absolutePath] = { snap: null, version: 1 };
       }
       return;
     }
-    var snap = ts.ScriptSnapshot.fromString(body);
+    const snap = ts.ScriptSnapshot.fromString(body);
     if (files[absolutePath]) {
       files[absolutePath].version += 1;
       files[absolutePath].snap = snap;
     } else {
-      files[absolutePath] = { version: 1, snap: snap };
+      files[absolutePath] = { snap, version: 1 };
     }
   }
 
@@ -91,7 +103,7 @@ function createHost(projectRoot) {
     if (files[absolutePath]) {
       return;
     }
-    var contents = null;
+    let contents = null;
     try {
       contents = fs.readFileSync(absolutePath, 'utf8');
     } catch (ignoreErr) {
@@ -101,18 +113,14 @@ function createHost(projectRoot) {
   }
 
   function addFileAsync(absolutePath: string): Promise<any> {
-    return new Promise(function (resolve, reject) {
-      if (files[absolutePath]) {
-        return resolve();
-      }
-      fs.readFile(absolutePath, 'utf8', function (err, contents) {
-        if (err) {
-          log.error('Cannot open file (' + err.code + '): ' + absolutePath);
-        }
-        addFile(absolutePath, contents || null);
-        return resolve();
+    return readFile(absolutePath, 'utf8')
+      .catch(err => {
+        log.error('Cannot open file (' + err.code + '): ' + absolutePath);
+        return null;
+      })
+      .then(contents => {
+        addFile(absolutePath, contents);
       });
-    });
   }
 
   return {
@@ -128,7 +136,7 @@ function createHost(projectRoot) {
       return readCompilerOptions(projectRoot);
     },
     getDefaultLibFileName: function (options) {
-      var fileName = normalizePath(ts.getDefaultLibFilePath(options));
+      const fileName = normalizePath(ts.getDefaultLibFilePath(options));
       addFileSync(fileName);
       return fileName;
     },
@@ -161,8 +169,8 @@ function getStuffForProject(projectRoot) {
   if (projects[projectRoot]) {
     return Promise.resolve(projects[projectRoot]);
   }
-  var host = createHost(projectRoot);
-  var languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
+  const host = createHost(projectRoot);
+  const languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
 
   const config = readConfig(projectRoot);
   const extensions: string[] = ['.ts', '.tsx'];
@@ -198,14 +206,14 @@ function mapDiagnostics(diagnostics) {
       // sample: {"start":255,"length":1,"messageText":"Cannot find name 's'.","category":1,"code":2304}
       // sample2: { file: undefined, start: undefined, length: undefined,
       // messageText: 'Cannot find global type \'String\'.', category: 1, code: 2318 }
-      var type = 'TypeScriptDiagnostic';
-      var messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
-      var message = 'TS' + diagnostic.code + ': ' + messageText;
+      const type = 'TypeScriptDiagnostic';
+      const messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
+      const message = 'TS' + diagnostic.code + ': ' + messageText;
 
-      var line = 0;
-      var ch = 0;
+      let line = 0;
+      let ch = 0;
       if (diagnostic.file) {
-        var lineChar = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+        const lineChar = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
         line = lineChar.line;
         ch = lineChar.character;
       }
@@ -222,7 +230,7 @@ function mapDiagnostics(diagnostics) {
   };
 }
 
-exports.fileChange = function(fileChangeNotification: FileChangeNotification): void {
+export function fileChange(fileChangeNotification: FileChangeNotification): void {
   getProjectRoots().forEach(projectRoot => {
     if (fileChangeNotification.fullPath.indexOf(projectRoot) !== 0) {
       // not in this project
@@ -232,45 +240,48 @@ exports.fileChange = function(fileChangeNotification: FileChangeNotification): v
     const projectConfig = projects[projectRoot];
     const relativePath = '/' + fileChangeNotification.fullPath.substring(projectRoot.length);
 
+    if (relativePath === '/tslint.json') {
+      projectConfig.tsLintConfig = getTsLintConfig(projectRoot);
+    }
+
     if (fileChangeNotification.isFile && isFileMatching(relativePath, projectConfig.fileMatcherData)) {
       projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
       return;
     }
 
     if (fileChangeNotification.isDirectory && isDirectoryMatching(relativePath, projectConfig.fileMatcherData)) {
-      matchFilesInDirectory(relativePath, combinePaths(projectRoot, relativePath), projectConfig.fileMatcherData).then(files => {
-        files.forEach(function (file) {
-          projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, file)));
-        });
-      });
+      matchFilesInDirectory(relativePath, combinePaths(projectRoot, relativePath), projectConfig.fileMatcherData)
+        .then(files => files.map(file =>
+          projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, file)))
+        ));
       return;
     }
   });
 };
 
-exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, callback) {
+export function getDiagnostics(projectRoot, fullPath, code, callback) {
   return getStuffForProject(projectRoot).then(function _getDiagnostics(obj) {
-    var host = obj.host;
-    var languageService = obj.languageService;
+    const host = obj.host;
+    const languageService = obj.languageService;
     host.addFile(fullPath, code);
 
     // run compiler diagnostic first
-    var compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(fullPath);
+    const compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(fullPath);
     if (compilerDiagnostics.length > 0) {
       return callback(null, mapDiagnostics(compilerDiagnostics));
     }
 
     // run typescript diagnostics second
-    var semanticDiagnostics = languageService.getSemanticDiagnostics(fullPath);
-    var syntaxDiagnostics = languageService.getSyntacticDiagnostics(fullPath);
-    var diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
+    const semanticDiagnostics = languageService.getSemanticDiagnostics(fullPath);
+    const syntaxDiagnostics = languageService.getSyntacticDiagnostics(fullPath);
+    const diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
     if (diagnostics.length > 0) {
       return callback(null, mapDiagnostics(diagnostics));
     }
 
     // if config for TSLint is present in the project, run TSLint checking
     if (obj.tsLintConfig) {
-      let errors = executeTsLint(fullPath, code, obj.tsLintConfig, languageService);
+      const errors = executeTsLint(fullPath, code, obj.tsLintConfig, languageService);
       if (errors.length > 0) {
         return callback(null, { errors });
       }
@@ -290,8 +301,8 @@ exports.getDiagnostics = function getDiagnostics(projectRoot, fullPath, code, ca
 function mapCompletions(completions: CompletionInfo, currentWord) {
   const entries = _.get(completions, 'entries', []);
 
-  var hints = _.sortBy(entries, function (entry) {
-    var sort = entry.sortText;
+  let hints = _.sortBy(entries, function (entry) {
+    let sort = entry.sortText;
     if (currentWord) {
       sort += entry.name.indexOf(currentWord) === 0 ? '0' : '1';
     }
@@ -299,7 +310,7 @@ function mapCompletions(completions: CompletionInfo, currentWord) {
   }).map(function (entry) { return entry.name; });
 
   if (currentWord) {
-    var re = new RegExp('^' + escapeStringRegexp(currentWord), 'i');
+    const re = new RegExp('^' + escapeStringRegexp(currentWord), 'i');
     hints = hints.filter(function (h) { return re.test(h); });
   }
 
@@ -311,16 +322,16 @@ function mapCompletions(completions: CompletionInfo, currentWord) {
   };
 }
 
-exports.getCompletions = function getCompletions(projectRoot, fullPath, code, position, callback) {
+export function getCompletions(projectRoot, fullPath, code, position, callback) {
   return getStuffForProject(projectRoot).then(function _getCompletions(obj) {
-    var host = obj.host;
-    var languageService = obj.languageService;
+    const host = obj.host;
+    const languageService = obj.languageService;
     host.addFile(fullPath, code);
 
-    var isMemberCompletion = false;
-    var currentWord = null;
-    var codeBeforeCursor = code.slice(0, position);
-    var match = codeBeforeCursor.match(/\.([\$_a-zA-Z0-9]*$)/);
+    const codeBeforeCursor = code.slice(0, position);
+    let isMemberCompletion = false;
+    let currentWord = null;
+    let match = codeBeforeCursor.match(/\.([\$_a-zA-Z0-9]*$)/);
     if (match && match.length > 0) {
       isMemberCompletion = true;
       currentWord = match[1];
@@ -329,7 +340,9 @@ exports.getCompletions = function getCompletions(projectRoot, fullPath, code, po
       currentWord = match ? match[0] : null;
     }
 
-    var completions: CompletionInfo = languageService.getCompletionsAtPosition(fullPath, position, isMemberCompletion);
+    const completions: CompletionInfo = languageService.getCompletionsAtPosition(
+      fullPath, position, isMemberCompletion
+    );
     return callback(null, mapCompletions(completions, currentWord));
   }).catch(function (err) {
     if (err.name === 'ReadConfigError') {

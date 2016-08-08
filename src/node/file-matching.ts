@@ -1,11 +1,13 @@
 import Promise = require('bluebird');
-import { fileExtensionIsAny, normalizePath, combinePaths, getFileSystemEntries } from './fs-utils';
+import { combinePaths, fileExtensionIsAny, getFileSystemEntries, normalizePath } from './fs-utils';
 
 const ts = require('typescript');
 const useCaseSensitiveFileNames: boolean = true;
-const regexFlag: string = useCaseSensitiveFileNames ? "" : "i";
+const regexFlag: string = useCaseSensitiveFileNames ? '' : 'i';
 
-export function getFileMatcherPatterns(projectRoot: string, extensions: string[], excludes: string[], includes: string[]): FileMatcherPatterns {
+export function getFileMatcherPatterns(
+  projectRoot: string, extensions: string[], excludes: string[], includes: string[]
+): FileMatcherPatterns {
   const path: string = '/';
   const currentDirectory: string = normalizePath(projectRoot);
   return ts.getFileMatcherPatterns(path, extensions, excludes, includes, useCaseSensitiveFileNames, currentDirectory);
@@ -41,7 +43,9 @@ export function isDirectoryMatching(name: string, fileMatcherData: FileMatcherDa
   return false;
 }
 
-export function matchFilesInDirectory(projectPath: string, absolutePath: string, fileMatcherData: FileMatcherData): Promise<string[]> {
+export function matchFilesInDirectory(
+  projectPath: string, absolutePath: string, fileMatcherData: FileMatcherData
+): Promise<string[]> {
   return getFileSystemEntries(absolutePath).then((entries) => {
     const { files, directories } = entries;
 
@@ -63,7 +67,9 @@ export function matchFilesInDirectory(projectPath: string, absolutePath: string,
   });
 }
 
-export function matchFilesInProject(projectRoot: string, basePaths: string[], fileMatcherData: FileMatcherData): Promise<string[]> {
+export function matchFilesInProject(
+  projectRoot: string, basePaths: string[], fileMatcherData: FileMatcherData
+): Promise<string[]> {
   return Promise.all(basePaths.map(function (basePath) {
     return matchFilesInDirectory(basePath, combinePaths(projectRoot, basePath), fileMatcherData);
   })).then(function (results: Array<Array<string>>) {

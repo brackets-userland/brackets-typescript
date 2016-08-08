@@ -32,7 +32,7 @@ export function combinePaths(...paths: string[]): string {
 }
 
 export function isAbsolutePath(fullPath): boolean {
-  return (fullPath[0] === "/" || (fullPath[1] === ":" && fullPath[2] === "/"));
+  return (fullPath[0] === '/' || (fullPath[1] === ':' && fullPath[2] === '/'));
 }
 
 export function ensureRelative(dirOrFilePath: string, rootPath: string): string {
@@ -49,11 +49,11 @@ export function ensureRelative(dirOrFilePath: string, rootPath: string): string 
 export function getFileSystemEntries(dirPath) {
   return readdir(dirPath).then((dirOrFiles: string[]) => {
     return Promise.all(dirOrFiles.map((dirOrFile: string) => {
-      return stat(path.join(dirPath, dirOrFile)).then((stat) => {
+      return stat(path.join(dirPath, dirOrFile)).then((stats) => {
         return {
           dirOrFile: dirOrFile,
-          isFile: stat.isFile(),
-          isDirectory: stat.isDirectory()
+          isFile: stats.isFile(),
+          isDirectory: stats.isDirectory()
         };
       });
     }));

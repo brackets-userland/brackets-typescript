@@ -1,7 +1,7 @@
 'use strict';
 
-var PackageJson = require('../../package.json');
-var EXTENSION_NAME = PackageJson.name;
+const PackageJson = require('../../package.json');
+const EXTENSION_NAME = PackageJson.name;
 
 function doLog(level: string, msgs: string[]): void {
   console[level].apply(console, ['[' + EXTENSION_NAME + ']'].concat(msgs));

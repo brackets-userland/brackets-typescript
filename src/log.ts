@@ -1,9 +1,9 @@
 define(function (require, exports, module) {
   'use strict';
 
-  var PackageJson = JSON.parse(require('text!../package.json'));
-  var EXTENSION_NAME = PackageJson.name;
-  // var EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
+  const PackageJson = JSON.parse(require('text!../package.json'));
+  const EXTENSION_NAME = PackageJson.name;
+  // const EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
 
   function ArrayFrom(object) {
     return [].slice.call(object);

@@ -4,12 +4,13 @@ if (!global.Promise) {
   require('any-promise/register/bluebird');
 }
 
-var PackageJson = require('../../package.json');
-var EXTENSION_NAME = PackageJson.name;
-var EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
-var domainName = EXTENSION_UNIQUE_NAME;
-var domainManager = null;
-var tsUtils = require('./ts-utils');
+import * as tsUtils from './ts-utils';
+
+const PackageJson = require('../../package.json');
+const EXTENSION_NAME = PackageJson.name;
+const EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
+const domainName = EXTENSION_UNIQUE_NAME;
+let domainManager = null;
 
 exports.init = function (_domainManager) {
   domainManager = _domainManager;
