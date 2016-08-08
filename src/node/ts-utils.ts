@@ -260,9 +260,8 @@ export function fileChange(fileChangeNotification: FileChangeNotification): void
 
 export function getDiagnostics(projectRoot, fullPath, code, callback) {
   return getStuffForProject(projectRoot).then(function _getDiagnostics(obj) {
-    const host = obj.host;
+    obj.host.addFile(fullPath, code);
     const languageService = obj.languageService;
-    host.addFile(fullPath, code);
 
     // run compiler diagnostic first
     const compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(fullPath);
@@ -323,9 +322,8 @@ function mapCompletions(completions: CompletionInfo, currentWord) {
 
 export function getCompletions(projectRoot, fullPath, code, position, callback) {
   return getStuffForProject(projectRoot).then(function _getCompletions(obj) {
-    const host = obj.host;
+    obj.host.addFile(fullPath, code);
     const languageService = obj.languageService;
-    host.addFile(fullPath, code);
 
     const codeBeforeCursor = code.slice(0, position);
     let isMemberCompletion = false;
