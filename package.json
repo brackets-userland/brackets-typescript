@@ -20,9 +20,10 @@
     "url": "https://github.com/zaggino/brackets-typescript.git"
   },
   "scripts": {
+    "dev": "tsc --watch",
+    "test": "tsc && tslint -c tslint.json --project tsconfig.json",
     "postinstall": "typings install",
-    "prepublish": "tsc",
-    "dev": "tsc --watch"
+    "prepublish": "tsc"
   },
   "dependencies": {
     "any-promise": "^1.3.0",
