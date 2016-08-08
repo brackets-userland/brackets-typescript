@@ -58,7 +58,7 @@ function readCompilerOptions(projectRoot) {
   return _.defaults(settings.options, ts.getDefaultCompilerOptions());
 }
 
-function createHost(projectRoot) {
+function createHost(projectRoot) /*: LanguageServiceHost */ {
 
   const files = [];
 
@@ -261,6 +261,11 @@ export function fileChange(fileChangeNotification: FileChangeNotification): void
 export function getDiagnostics(projectRoot, fullPath, code, callback) {
   return getStuffForProject(projectRoot).then(function _getDiagnostics(obj) {
     obj.host.addFile(fullPath, code);
+
+    // TODO: create program with tslint helper method and
+    // compare results of program.getSourceFiles(): SourceFile[]; and getRootFileNames
+
+    /* TODO: delete
     const languageService = obj.languageService;
 
     // run compiler diagnostic first
@@ -276,10 +281,34 @@ export function getDiagnostics(projectRoot, fullPath, code, callback) {
     if (diagnostics.length > 0) {
       return callback(null, mapDiagnostics(diagnostics));
     }
+    */
+
+    const program /*: ts.Program */ = obj.languageService.getProgram();
+
+    const generalDiagnostics = [].concat(
+      program.getGlobalDiagnostics(),
+      program.getOptionsDiagnostics()
+    );
+    if (generalDiagnostics.length > 0) {
+      return callback(null, mapDiagnostics(generalDiagnostics));
+    }
+
+    const sourceFile = program.getSourceFile(fullPath);
+
+    const fileDiagnostics = [].concat(
+      program.getDeclarationDiagnostics(sourceFile),
+      program.getSemanticDiagnostics(sourceFile),
+      program.getSyntacticDiagnostics(sourceFile)
+    );
+    if (fileDiagnostics.length > 0) {
+      return callback(null, mapDiagnostics(fileDiagnostics));
+    }
+
+    // TODO: const typeChecker /*: ts.TypeChecker */ = program.getTypeChecker();
 
     // if config for TSLint is present in the project, run TSLint checking
     if (obj.tsLintConfig) {
-      const errors = executeTsLint(fullPath, code, obj.tsLintConfig, languageService);
+      const errors = executeTsLint(fullPath, code, obj.tsLintConfig, program);
       if (errors.length > 0) {
         return callback(null, { errors });
       }

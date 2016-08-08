@@ -27,9 +27,8 @@ export function mapLintFailures(failures): Array<CodeInspectionError> {
   }) : [];
 }
 
-export function executeTsLint(fullPath, code, tsLintConfig, languageService): Array<CodeInspectionError> {
+export function executeTsLint(fullPath, code, tsLintConfig, program): Array<CodeInspectionError> {
   try {
-    const program = languageService.getProgram();
     const options: ILinterOptionsRaw = {
       configuration: tsLintConfig
     };
