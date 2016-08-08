@@ -206,7 +206,6 @@ function mapDiagnostics(diagnostics) {
       // sample: {"start":255,"length":1,"messageText":"Cannot find name 's'.","category":1,"code":2304}
       // sample2: { file: undefined, start: undefined, length: undefined,
       // messageText: 'Cannot find global type \'String\'.', category: 1, code: 2318 }
-      const type = 'TypeScriptDiagnostic';
       const messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
       const message = 'TS' + diagnostic.code + ': ' + messageText;
 
@@ -219,7 +218,7 @@ function mapDiagnostics(diagnostics) {
       }
 
       return {
-        type: type,
+        type: 'problem_type_error',
         message: message,
         pos: {
           line: line,
