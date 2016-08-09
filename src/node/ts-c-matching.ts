@@ -2,7 +2,7 @@ import * as ts from 'typescript';
 import {
   FileSystemEntries, normalizePath, combinePaths, fileExtensionIsAny, getNormalizedPathComponents,
   removeTrailingDirectorySeparator, directorySeparator, isRootedDiskPath, indexOfAnyCharCode, getDirectoryPath,
-  compareStrings, compareStringsCaseInsensitive, containsPath
+  compareStrings, compareStringsCaseInsensitive, containsPath, FileMatcherPatterns
 } from './ts-c-core';
 import { CharacterCodes } from './ts-c-types';
 

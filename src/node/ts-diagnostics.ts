@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import * as log from './log';
 import * as ts from 'typescript';
-import { getStuffForProject } from './ts-utils';
+import { getStuffForProject, BTypeScriptProject } from './ts-utils';
 import { executeTsLint } from './tslint-utils';
 
 export function mapDiagnostics(diagnostics) {
@@ -34,31 +34,11 @@ export function mapDiagnostics(diagnostics) {
 }
 
 export function getDiagnostics(projectRoot, fullPath, code, callback) {
-  return getStuffForProject(projectRoot).then(function _getDiagnostics(obj) {
-    obj.host.addFile(fullPath, code);
+  const project: BTypeScriptProject = getStuffForProject(projectRoot);
+  try {
+    // TODO: obj.host.addFile(fullPath, code);
 
-    // TODO: create program with tslint helper method and
-    // compare results of program.getSourceFiles(): SourceFile[]; and getRootFileNames
-
-    /* TODO: delete
-    const languageService = obj.languageService;
-
-    // run compiler diagnostic first
-    const compilerDiagnostics = languageService.getCompilerOptionsDiagnostics(fullPath);
-    if (compilerDiagnostics.length > 0) {
-      return callback(null, mapDiagnostics(compilerDiagnostics));
-    }
-
-    // run typescript diagnostics second
-    const semanticDiagnostics = languageService.getSemanticDiagnostics(fullPath);
-    const syntaxDiagnostics = languageService.getSyntacticDiagnostics(fullPath);
-    const diagnostics = [].concat(semanticDiagnostics, syntaxDiagnostics);
-    if (diagnostics.length > 0) {
-      return callback(null, mapDiagnostics(diagnostics));
-    }
-    */
-
-    const program /*: ts.Program */ = obj.languageService.getProgram();
+    const program: ts.Program = project.languageService.getProgram();
 
     const generalDiagnostics = [].concat(
       program.getGlobalDiagnostics(),
@@ -82,8 +62,8 @@ export function getDiagnostics(projectRoot, fullPath, code, callback) {
     // TODO: const typeChecker /*: ts.TypeChecker */ = program.getTypeChecker();
 
     // if config for TSLint is present in the project, run TSLint checking
-    if (obj.tsLintConfig) {
-      const errors = executeTsLint(fullPath, code, obj.tsLintConfig, program);
+    if (project.tsLintConfig) {
+      const errors = executeTsLint(fullPath, code, project.tsLintConfig, program);
       if (errors.length > 0) {
         return callback(null, { errors });
       }
@@ -91,11 +71,11 @@ export function getDiagnostics(projectRoot, fullPath, code, callback) {
 
     // no errors found
     return callback(null, { errors: [] });
-  }).catch(function (err) {
+  } catch (err) {
     if (err.name === 'ReadConfigError') {
       return callback(null, mapDiagnostics([ err ]));
     }
     log.error(err);
     return callback(err);
-  });
+  }
 };

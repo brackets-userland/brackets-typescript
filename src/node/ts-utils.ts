@@ -3,29 +3,16 @@
 import _ = require('lodash');
 import fs = require('fs');
 import path = require('path');
-import Promise = require('bluebird');
-import {
-  getFileMatcherData, getFileMatcherPatterns, isDirectoryMatching,
-  isFileMatching, matchFilesInDirectory, matchFilesInProject
-} from './file-matching';
+import * as ts from 'typescript';
 import { combinePaths, isAbsolutePath, normalizePath } from './fs-utils';
 import * as log from './log';
 import ReadConfigError from './read-config-error';
+import { IConfigurationFile } from 'tslint/lib/configuration';
+import { createCompilerHost } from './ts-c-program';
 
-const readFile: (path: string, encoding: string) => Promise<any> = Promise.promisify(fs.readFile);
-const ts = require('typescript');
 const tsconfigResolveSync = require('tsconfig').resolveSync;
 const TSLint = require('tslint');
 const projects = {};
-
-interface IConfigurationFile {
-  extends?: string | string[];
-  linterOptions?: {
-      typeCheck?: boolean,
-  };
-  rulesDirectory?: string | string[];
-  rules?: any;
-}
 
 function getProjectRoots(): string[] {
   return Object.keys(projects);
@@ -56,121 +43,43 @@ function readCompilerOptions(projectRoot) {
   return _.defaults(settings.options, ts.getDefaultCompilerOptions());
 }
 
-function createHost(projectRoot) /*: LanguageServiceHost */ {
-
-  const files = [];
-
-  function addPackageJson(fileName: string, body: string): void {
-    let packageJson;
-    try {
-      packageJson = JSON.parse(body);
-    } catch (err) {
-      log.error(`Error parsing ${fileName}: ${err}`);
-      return;
-    }
-    if (typeof packageJson.typings === 'string') {
-      addFileSync(path.resolve(path.dirname(fileName), packageJson.typings));
-    }
-  }
-
-  function addFile(absolutePath: string, body?: string): void {
-    if (!isAbsolutePath(absolutePath)) {
-      const err = new Error(`addFile should receive : ${absolutePath}`);
-      log.error(err.stack);
-    }
-    if (body && /\/package.json$/.test(absolutePath)) {
-      addPackageJson(absolutePath, body);
-      return;
-    }
-    if (body == null) {
-      if (!files[absolutePath]) {
-        files[absolutePath] = { snap: null, version: 1 };
-      }
-      return;
-    }
-    const snap = ts.ScriptSnapshot.fromString(body);
-    if (files[absolutePath]) {
-      files[absolutePath].version += 1;
-      files[absolutePath].snap = snap;
-    } else {
-      files[absolutePath] = { snap, version: 1 };
-    }
-  }
-
-  function addFileSync(absolutePath: string): void {
-    if (files[absolutePath]) {
-      return;
-    }
-    let contents = null;
-    try {
-      contents = fs.readFileSync(absolutePath, 'utf8');
-    } catch (ignoreErr) {
-      // log.error('Cannot open file (' + err.code + '): ' + absolutePath);
-    }
-    addFile(absolutePath, contents);
-  }
-
-  function addFileAsync(absolutePath: string): Promise<any> {
-    return readFile(absolutePath, 'utf8')
-      .catch(err => {
-        log.error('Cannot open file (' + err.code + '): ' + absolutePath);
-        return null;
-      })
-      .then(contents => {
-        addFile(absolutePath, contents);
-      });
-  }
-
-  return {
-    $addFileSync: addFileSync,
-    $addFileAsync: addFileAsync,
-    getCurrentDirectory: function () {
-      return projectRoot;
-    },
-    getScriptFileNames: function () {
-      return Object.keys(files);
-    },
-    getCompilationSettings: function () {
-      return readCompilerOptions(projectRoot);
-    },
-    getDefaultLibFileName: function (options) {
-      const fileName = normalizePath(ts.getDefaultLibFilePath(options));
-      addFileSync(fileName);
-      return fileName;
-    },
-    addFile: addFile,
-    getScriptIsOpen: function (fileName) {
-      fileName = normalizePath(fileName);
-      addFileSync(fileName);
-      return files[fileName] && files[fileName].snap != null;
-    },
-    getScriptSnapshot: function (fileName) {
-      fileName = normalizePath(fileName);
-      addFileSync(fileName);
-      return files[fileName] && files[fileName].snap;
-    },
-    getScriptVersion: function (fileName) {
-      fileName = normalizePath(fileName);
-      addFileSync(fileName);
-      return files[fileName] && files[fileName].version.toString();
-    }
-  };
-}
-
 function getTsLintConfig(projectRoot: string): IConfigurationFile {
   const tsLintConfigPath = TSLint.findConfigurationPath(null, projectRoot);
   return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
 
-export function getStuffForProject(projectRoot) {
-  projectRoot = normalizePath(projectRoot);
-  if (projects[projectRoot]) {
-    return Promise.resolve(projects[projectRoot]);
-  }
-  const host = createHost(projectRoot);
-  const languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
+export interface BTypeScriptProject {
+  compilerOptions: ts.CompilerOptions;
+  compilerHost: ts.CompilerHost;
+  languageService: ts.LanguageService;
+  tsLintConfig?: any;
+}
 
-  const config = readConfig(projectRoot);
+export function getStuffForProject(projectRoot): BTypeScriptProject {
+  projectRoot = normalizePath(projectRoot);
+
+  // set cwd to projectRoot because compiler checks where it's being launched from
+  // later when we pass around projectRoot we can actually cache results of this function
+  process.chdir(projectRoot);
+
+  /*
+  if (projects[projectRoot]) {
+    return projects[projectRoot];
+  }
+  */
+
+  const compilerOptions: ts.CompilerOptions = readConfig(projectRoot);
+  const compilerHost: ts.CompilerHost = createCompilerHost(compilerOptions);
+  const languageService: ts.LanguageService = ts.createLanguageService(compilerHost, ts.createDocumentRegistry());
+
+  return {
+    compilerOptions,
+    compilerHost,
+    languageService,
+    tsLintConfig: getTsLintConfig(projectRoot)
+  };
+
+  /*
   const extensions: string[] = ['.ts', '.tsx'];
   const includes: string[] = config.files;
   const excludes: string[] = config.exclude;
@@ -196,9 +105,8 @@ export function getStuffForProject(projectRoot) {
     };
     return projects[projectRoot];
   });
+  */
 }
-
-
 
 export function fileChange(fileChangeNotification: FileChangeNotification): void {
   getProjectRoots().forEach(projectRoot => {

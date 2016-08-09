@@ -1,11 +1,12 @@
 import * as _ from 'lodash';
 import * as log from './log';
-import { getStuffForProject } from './ts-utils';
+import * as ts from 'typescript';
+import { getStuffForProject, BTypeScriptProject } from './ts-utils';
 import { mapDiagnostics } from './ts-diagnostics';
 
 const escapeStringRegexp = require('escape-string-regexp');
 
-function mapCompletions(completions: CompletionInfo, currentWord) {
+function mapCompletions(completions: ts.CompletionInfo, currentWord) {
   const entries = _.get(completions, 'entries', []);
 
   let hints = _.sortBy(entries, function (entry) {
@@ -30,9 +31,9 @@ function mapCompletions(completions: CompletionInfo, currentWord) {
 }
 
 export function getCompletions(projectRoot, fullPath, code, position, callback) {
-  return getStuffForProject(projectRoot).then(function _getCompletions(obj) {
-    obj.host.addFile(fullPath, code);
-    const languageService = obj.languageService;
+  const project: BTypeScriptProject = getStuffForProject(projectRoot);
+  try {
+    // TODO: project.compilerHost.addFile(fullPath, code);
 
     const codeBeforeCursor = code.slice(0, position);
     let isMemberCompletion = false;
@@ -46,15 +47,17 @@ export function getCompletions(projectRoot, fullPath, code, position, callback) 
       currentWord = match ? match[0] : null;
     }
 
-    const completions: CompletionInfo = languageService.getCompletionsAtPosition(
+    const languageService = (<any> project.languageService);
+    const completions: ts.CompletionInfo = languageService.getCompletionsAtPosition(
       fullPath, position, isMemberCompletion
     );
+
     return callback(null, mapCompletions(completions, currentWord));
-  }).catch(function (err) {
+  } catch (err) {
     if (err.name === 'ReadConfigError') {
       return callback(null, mapDiagnostics([ err ]));
     }
     log.error(err);
     return callback(err);
-  });
+  }
 };

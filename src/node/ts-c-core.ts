@@ -10,6 +10,13 @@ export interface FileSystemEntries {
   directories: string[];
 }
 
+export interface FileMatcherPatterns {
+  includeFilePattern: string;
+  includeDirectoryPattern: string;
+  excludePattern: string;
+  basePaths: string[];
+}
+
 export function hasProperty<T>(map: ts.Map<T>, key: string): boolean {
   return hasOwnProperty.call(map, key);
 }
