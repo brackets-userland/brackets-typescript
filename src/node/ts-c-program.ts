@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
 import { hasProperty, getRootLength, getDirectoryPath, normalizePath, combinePaths, memoize } from './ts-c-core';
-import { getSystem } from './ts-c-system';
+import { getNodeSystem } from './ts-c-sys';
 import { isWatchSet, getNewLineCharacter } from './ts-c-utilities';
 
 interface OutputFingerprint {
@@ -129,6 +129,6 @@ function _createCompilerHost(sys: ts.System, options: ts.CompilerOptions, setPar
 }
 
 export function createCompilerHost(options: ts.CompilerOptions, setParentNodes?: boolean): ts.CompilerHost {
-  const sys: ts.System = getSystem();
+  const sys: ts.System = getNodeSystem();
   return _createCompilerHost(sys, options, setParentNodes);
 }

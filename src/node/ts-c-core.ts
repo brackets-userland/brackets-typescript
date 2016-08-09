@@ -5,6 +5,11 @@ const hasOwnProperty = Object.prototype.hasOwnProperty;
 
 export const directorySeparator = "/";
 
+export interface FileSystemEntries {
+  files: string[];
+  directories: string[];
+}
+
 export function hasProperty<T>(map: ts.Map<T>, key: string): boolean {
   return hasOwnProperty.call(map, key);
 }
@@ -96,4 +101,54 @@ export function memoize<T>(callback: () => T): () => T {
     }
     return value;
   };
+}
+
+export function copyListRemovingItem<T>(item: T, list: T[]) {
+  const copiedList: T[] = [];
+  for (const e of list) {
+    if (e !== item) {
+      copiedList.push(e);
+    }
+  }
+  return copiedList;
+}
+
+function normalizedPathComponents(path: string, rootLength: number) {
+  const normalizedParts = getNormalizedParts(path, rootLength);
+  return [path.substr(0, rootLength)].concat(normalizedParts);
+}
+
+export function getNormalizedPathComponents(path: string, currentDirectory: string) {
+  path = normalizeSlashes(path);
+  let rootLength = getRootLength(path);
+  if (rootLength === 0) {
+    // If the path is not rooted it is relative to current directory
+    path = combinePaths(normalizeSlashes(currentDirectory), path);
+    rootLength = getRootLength(path);
+  }
+  return normalizedPathComponents(path, rootLength);
+}
+
+export function getNormalizedAbsolutePath(fileName: string, currentDirectory: string) {
+  return getNormalizedPathFromPathComponents(getNormalizedPathComponents(fileName, currentDirectory));
+}
+
+export function getNormalizedPathFromPathComponents(pathComponents: string[]) {
+  if (pathComponents && pathComponents.length) {
+    return pathComponents[0] + pathComponents.slice(1).join(directorySeparator);
+  }
+  return null;
+}
+
+export function filter<T>(array: T[], f: (x: T) => boolean): T[] {
+  let result: T[];
+  if (array) {
+    result = [];
+    for (const item of array) {
+      if (f(item)) {
+        result.push(item);
+      }
+    }
+  }
+  return result;
 }
