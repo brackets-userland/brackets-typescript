@@ -10,6 +10,7 @@ import { IConfigurationFile } from 'tslint/lib/configuration';
 import { createCompilerHost } from './ts-c-program';
 import { createLanguageHost } from './ts-l-program';
 import { normalizePath } from './ts-c-core';
+import { getNodeSystem } from './ts-c-sys';
 
 const tsconfigResolveSync = require('tsconfig').resolveSync;
 const TSLint = require('tslint');
@@ -54,9 +55,10 @@ function getTsLintConfig(projectRoot: string): IConfigurationFile {
 }
 
 export interface TypeScriptProject {
-  compilerOptions: ts.CompilerOptions;
-  compilerHost: ts.CompilerHost;
-  languageService: ts.LanguageService;
+  // compilerOptions: ts.CompilerOptions;
+  // compilerHost: ts.CompilerHost;
+  // languageService: ts.LanguageService;
+  program: ts.Program;
   tsLintConfig?: any;
 }
 
@@ -73,15 +75,22 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
   }
   */
 
-  const compilerOptions: ts.CompilerOptions = readCompilerOptions(projectRoot);
-  const compilerHost: ts.CompilerHost = createCompilerHost(compilerOptions);
-  const languageServiceHost: ts.LanguageServiceHost = createLanguageHost();
-  const languageService: ts.LanguageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
+  // const compilerOptions: ts.CompilerOptions = readCompilerOptions(projectRoot);
+  // const compilerHost: ts.CompilerHost = createCompilerHost(compilerOptions);
+  // const languageServiceHost: ts.LanguageServiceHost = createLanguageHost();
+  // const languageService: ts.LanguageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
+
+  const sys = getNodeSystem();
+  const config = ts.readConfigFile('tsconfig.json', sys.readFile).config;
+  const parsed = ts.parseJsonConfigFileContent(config, sys, projectRoot);
+  const host = ts.createCompilerHost(parsed.options, true);
+  const program = ts.createProgram(parsed.fileNames, parsed.options, host);
 
   return {
-    compilerOptions,
-    compilerHost,
-    languageService,
+    // compilerOptions,
+    // compilerHost,
+    // languageService,
+    program,
     tsLintConfig: getTsLintConfig(projectRoot)
   };
 

@@ -38,7 +38,7 @@ export function getDiagnostics(projectRoot, fullPath, code, callback) {
   try {
     // TODO: obj.host.addFile(fullPath, code);
 
-    const program: ts.Program = project.languageService.getProgram();
+    const program: ts.Program = project.program;
 
     const generalDiagnostics = [].concat(
       program.getGlobalDiagnostics(),
