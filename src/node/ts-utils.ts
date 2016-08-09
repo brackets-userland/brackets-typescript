@@ -82,9 +82,11 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
 
   const sys = getNodeSystem();
   const config = ts.readConfigFile('tsconfig.json', sys.readFile).config;
-  const parsed = ts.parseJsonConfigFileContent(config, sys, projectRoot);
-  const host = ts.createCompilerHost(parsed.options, true);
-  const program = ts.createProgram(parsed.fileNames, parsed.options, host);
+  const parsed: ts.ParsedCommandLine = ts.parseJsonConfigFileContent(config, sys, projectRoot);
+  const options: ts.CompilerOptions = parsed.options;
+  const fileNames: string[] = parsed.fileNames;
+  const host = ts.createCompilerHost(options, true);
+  const program = ts.createProgram(fileNames, options, host);
 
   return {
     // compilerOptions,
