@@ -6,7 +6,7 @@ if (!global.Promise) {
 
 import { getCompletions } from './ts-completions';
 import { getDiagnostics } from './ts-diagnostics';
-import * as tsUtils from './ts-utils';
+import { fileChange } from './ts-utils';
 
 const PackageJson = require('../../package.json');
 const EXTENSION_NAME = PackageJson.name;
@@ -24,7 +24,7 @@ exports.init = function (_domainManager) {
   domainManager.registerCommand(
     domainName,
     'fileChange', // command name
-    tsUtils.fileChange, // handler function
+    fileChange, // handler function
     false, // is not async
     'fileChange', // description
     [

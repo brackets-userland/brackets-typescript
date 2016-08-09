@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import * as log from './log';
 import * as ts from 'typescript';
-import { getStuffForProject, BTypeScriptProject } from './ts-utils';
+import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 import { executeTsLint } from './tslint-utils';
 
 export function mapDiagnostics(diagnostics) {
@@ -34,7 +34,7 @@ export function mapDiagnostics(diagnostics) {
 }
 
 export function getDiagnostics(projectRoot, fullPath, code, callback) {
-  const project: BTypeScriptProject = getStuffForProject(projectRoot);
+  const project: TypeScriptProject = getTypeScriptProject(projectRoot);
   try {
     // TODO: obj.host.addFile(fullPath, code);
 

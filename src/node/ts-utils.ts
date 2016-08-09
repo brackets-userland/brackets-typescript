@@ -4,11 +4,12 @@ import _ = require('lodash');
 import fs = require('fs');
 import path = require('path');
 import * as ts from 'typescript';
-import { combinePaths, isAbsolutePath, normalizePath } from './fs-utils';
 import * as log from './log';
 import ReadConfigError from './read-config-error';
 import { IConfigurationFile } from 'tslint/lib/configuration';
 import { createCompilerHost } from './ts-c-program';
+import { createLanguageHost } from './ts-l-program';
+import { normalizePath } from './ts-c-core';
 
 const tsconfigResolveSync = require('tsconfig').resolveSync;
 const TSLint = require('tslint');
@@ -30,17 +31,21 @@ function readConfig(projectRoot) {
   return rawConfig.config;
 }
 
-function readCompilerOptions(projectRoot) {
+function readCompilerOptions(projectRoot): ts.CompilerOptions {
   const tsconfigPath = tsconfigResolveSync(projectRoot);
   const tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
   const rawConfig = readConfig(projectRoot);
 
-  const settings = ts.convertCompilerOptionsFromJson(rawConfig.compilerOptions, tsconfigDir);
-  if (settings.errors && settings.errors.length > 0) {
-    throw new ReadConfigError(settings.errors[0].code, settings.errors[0].messageText);
+  const results: {
+    options: ts.CompilerOptions;
+    errors: ts.Diagnostic[];
+  } = ts.convertCompilerOptionsFromJson(rawConfig.compilerOptions, tsconfigDir);
+
+  if (results.errors && results.errors.length > 0) {
+    throw new ReadConfigError(results.errors[0].code, results.errors[0].messageText);
   }
 
-  return _.defaults(settings.options, ts.getDefaultCompilerOptions());
+  return <ts.CompilerOptions> _.defaults(results.options, ts.getDefaultCompilerOptions());
 }
 
 function getTsLintConfig(projectRoot: string): IConfigurationFile {
@@ -48,14 +53,14 @@ function getTsLintConfig(projectRoot: string): IConfigurationFile {
   return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
 
-export interface BTypeScriptProject {
+export interface TypeScriptProject {
   compilerOptions: ts.CompilerOptions;
   compilerHost: ts.CompilerHost;
   languageService: ts.LanguageService;
   tsLintConfig?: any;
 }
 
-export function getStuffForProject(projectRoot): BTypeScriptProject {
+export function getTypeScriptProject(projectRoot): TypeScriptProject {
   projectRoot = normalizePath(projectRoot);
 
   // set cwd to projectRoot because compiler checks where it's being launched from
@@ -68,9 +73,10 @@ export function getStuffForProject(projectRoot): BTypeScriptProject {
   }
   */
 
-  const compilerOptions: ts.CompilerOptions = readConfig(projectRoot);
+  const compilerOptions: ts.CompilerOptions = readCompilerOptions(projectRoot);
   const compilerHost: ts.CompilerHost = createCompilerHost(compilerOptions);
-  const languageService: ts.LanguageService = ts.createLanguageService(compilerHost, ts.createDocumentRegistry());
+  const languageServiceHost: ts.LanguageServiceHost = createLanguageHost();
+  const languageService: ts.LanguageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
   return {
     compilerOptions,
@@ -109,6 +115,7 @@ export function getStuffForProject(projectRoot): BTypeScriptProject {
 }
 
 export function fileChange(fileChangeNotification: FileChangeNotification): void {
+  /*
   getProjectRoots().forEach(projectRoot => {
     if (fileChangeNotification.fullPath.indexOf(projectRoot) !== 0) {
       // not in this project
@@ -135,4 +142,5 @@ export function fileChange(fileChangeNotification: FileChangeNotification): void
       return;
     }
   });
+  */
 };

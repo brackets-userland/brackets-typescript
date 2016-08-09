@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import * as log from './log';
 import * as ts from 'typescript';
-import { getStuffForProject, BTypeScriptProject } from './ts-utils';
+import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 import { mapDiagnostics } from './ts-diagnostics';
 
 const escapeStringRegexp = require('escape-string-regexp');
@@ -31,7 +31,7 @@ function mapCompletions(completions: ts.CompletionInfo, currentWord) {
 }
 
 export function getCompletions(projectRoot, fullPath, code, position, callback) {
-  const project: BTypeScriptProject = getStuffForProject(projectRoot);
+  const project: TypeScriptProject = getTypeScriptProject(projectRoot);
   try {
     // TODO: project.compilerHost.addFile(fullPath, code);
 
