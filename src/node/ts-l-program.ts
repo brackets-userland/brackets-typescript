@@ -113,6 +113,7 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     }
   }
 
+  // TODO: somehow cache this info
   getDirectories(directoryName: string): string[] {
     return fs.readdirSync(directoryName).reduce((result, p) => {
       if (this.directoryExists(combinePaths(directoryName, p))) {
