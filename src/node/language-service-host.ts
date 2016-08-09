@@ -99,16 +99,16 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return combinePaths(typescriptPath, ts.getDefaultLibFileName(options));
   }
 
-  log(s: string): void {
-    _log.info('TypeScriptLanguageServiceHost', s);
-  }
+  // log(s: string): void {
+  //   _log.info('TypeScriptLanguageServiceHost', s);
+  // }
 
   trace(s: string): void {
-    _log.info('TypeScriptLanguageServiceHost', s);
+    _log.info('TypeScriptLanguageServiceHost', 'trace', s);
   }
 
   error(s: string): void {
-    _log.warn('TypeScriptLanguageServiceHost', s);
+    _log.warn('TypeScriptLanguageServiceHost', 'error', s);
   }
 
   useCaseSensitiveFileNames(): boolean {
