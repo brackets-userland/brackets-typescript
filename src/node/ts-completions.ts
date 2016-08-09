@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 import * as log from './log';
-import { getStuffForProject, mapDiagnostics } from './ts-utils';
+import { getStuffForProject } from './ts-utils';
+import { mapDiagnostics } from './ts-diagnostics';
 
 const escapeStringRegexp = require('escape-string-regexp');
 

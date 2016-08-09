@@ -4,8 +4,9 @@ if (!global.Promise) {
   require('any-promise/register/bluebird');
 }
 
-import * as tsUtils from './ts-utils';
 import { getCompletions } from './ts-completions';
+import { getDiagnostics } from './ts-diagnostics';
+import * as tsUtils from './ts-utils';
 
 const PackageJson = require('../../package.json');
 const EXTENSION_NAME = PackageJson.name;
@@ -36,7 +37,7 @@ exports.init = function (_domainManager) {
   domainManager.registerCommand(
     domainName,
     'getDiagnostics', // command name
-    tsUtils.getDiagnostics, // handler function
+    getDiagnostics, // handler function
     true, // is async
     'getDiagnostics', // description
     [
