@@ -1,20 +1,7 @@
-const TSLint = require('tslint');
+import * as TSLint from 'tslint';
+import { ILinterOptionsRaw, LintResult } from 'tslint/lib/lint';
 
-interface ILinterOptionsRaw {
-    configuration?: any;
-    formatter?: string;
-    formattersDirectory?: string;
-    rulesDirectory?: string | string[];
-}
-
-interface ILintResult {
-    failureCount: number;
-    failures: Array<any>;
-    format: string;
-    output: string;
-}
-
-export function mapLintFailures(failures): Array<CodeInspectionError> {
+export function mapLintResultFailures(failures): Array<CodeInspectionError> {
   return failures ? failures.map(failure => {
     return {
       type: 'problem_type_error',
@@ -33,8 +20,8 @@ export function executeTsLint(fullPath, code, tsLintConfig, program): Array<Code
       configuration: tsLintConfig
     };
     const tsLinter = new TSLint(fullPath, code, options, program);
-    const result: ILintResult = tsLinter.lint();
-    return mapLintFailures(result.failures);
+    const result: LintResult = tsLinter.lint();
+    return mapLintResultFailures(result.failures);
   } catch (err) {
     return [{
       type: 'problem_type_error',

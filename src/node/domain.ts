@@ -5,6 +5,7 @@ if (!global.Promise) {
 }
 
 import * as tsUtils from './ts-utils';
+import { getCompletions } from './ts-completions';
 
 const PackageJson = require('../../package.json');
 const EXTENSION_NAME = PackageJson.name;
@@ -50,7 +51,7 @@ exports.init = function (_domainManager) {
   domainManager.registerCommand(
     domainName,
     'getCompletions', // command name
-    tsUtils.getCompletions, // handler function
+    getCompletions, // handler function
     true, // is async
     'getCompletions', // description
     [
