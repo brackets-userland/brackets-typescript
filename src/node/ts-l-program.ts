@@ -88,6 +88,7 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return this.projectDirectory;
   }
 
+  // TODO: https://github.com/TypeStrong/atom-typescript/blob/8d43dd1b930a6df0ce62454a1560acfb7eee24c9/lib/main/lang/core/languageServiceHost2.ts#L205
   //getDefaultLibFileName(options: CompilerOptions): string;
 
   //log?(s: string): void;
