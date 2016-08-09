@@ -11,3 +11,4 @@ Use [brackets-npm-registry](https://github.com/zaggino/brackets-npm-registry)
 - syntax highlight using CodeMirror TypeScript mode
 - code inspection using TypeScript compiler (respecting `tsconfig.json`)
 - code completion using TypeScript completion API
+- code linting using TSLint (only enabled when `tslint.json` is found in the project root)
