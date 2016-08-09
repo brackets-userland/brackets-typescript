@@ -8,7 +8,7 @@ import * as log from './log';
 import ReadConfigError from './read-config-error';
 import { IConfigurationFile } from 'tslint/lib/configuration';
 import { createCompilerHost } from './ts-c-program';
-import { createLanguageHost } from './ts-l-program';
+import { TypeScriptLanguageServiceHost } from './language-service-host';
 import { normalizePath } from './ts-c-core';
 import { getNodeSystem } from './ts-c-sys';
 
@@ -77,7 +77,7 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
 
   // const compilerOptions: ts.CompilerOptions = readCompilerOptions(projectRoot);
   // const compilerHost: ts.CompilerHost = createCompilerHost(compilerOptions);
-  // const languageServiceHost: ts.LanguageServiceHost = createLanguageHost();
+  // const languageServiceHost: ts.LanguageServiceHost = new TypeScriptLanguageServiceHost();
   // const languageService: ts.LanguageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
   const sys = getNodeSystem();
