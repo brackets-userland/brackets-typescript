@@ -17,7 +17,7 @@ interface ILintResult {
 export function mapLintFailures(failures): Array<CodeInspectionError> {
   return failures ? failures.map(failure => {
     return {
-      type: 'TSLintError',
+      type: 'problem_type_error',
       message: failure.failure + ' [' + failure.ruleName + ']',
       pos: {
         line: failure.startPosition.lineAndCharacter.line,
@@ -37,7 +37,7 @@ export function executeTsLint(fullPath, code, tsLintConfig, program): Array<Code
     return mapLintFailures(result.failures);
   } catch (err) {
     return [{
-      type: 'TSLintError',
+      type: 'problem_type_error',
       message: `TSLintError: ${err.toString()}`,
       pos: { line: 0, ch: 0 }
     }];
