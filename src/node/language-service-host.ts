@@ -1,16 +1,20 @@
-import * as fs from 'fs';
-import * as ts from 'typescript';
 import * as _log from './log';
-import { combinePaths } from './ts-c-core';
+import { combinePaths, normalizePath } from './ts-c-core';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as ts from 'typescript';
+
+const typescriptPath = normalizePath(path.dirname(require.resolve('typescript')));
 
 export interface ScriptInfo {
-  version: number;
+  version: string;
   snapshot: ts.IScriptSnapshot;
 }
 
 export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
 
-  private files: { [fileName: string] : ScriptInfo } = {};
+  private files: { [fileName: string]: ScriptInfo } = {};
 
   constructor (private projectDirectory: string, private compilationSettings: ts.CompilerOptions, fileNames: string[]) {
     fileNames.forEach(fileName => {
@@ -20,13 +24,15 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
 
   addFile(fileName: string, text: string): ScriptInfo {
     const snapshot = ts.ScriptSnapshot.fromString(text);
-    if (!this.files[fileName]) {
-      this.files[fileName] = { version: 1, snapshot };
-    } else {
-      this.files[fileName].version++;
-      this.files[fileName].snapshot = snapshot;
-    }
+    const version = this.getFileHash(text);
+    this.files[fileName] = { version, snapshot };
     return this.files[fileName];
+  }
+
+  getFileHash(text: string): string {
+    const hash = crypto.createHash('md5');
+    hash.update(text);
+    return hash.digest('hex');
   }
 
   getCompilationSettings(): ts.CompilerOptions {
@@ -44,15 +50,15 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
   }
 
   getScriptKind(fileName: string): ts.ScriptKind {
-    const ext = fileName.substr(fileName.lastIndexOf("."));
+    const ext = fileName.substr(fileName.lastIndexOf('.'));
     switch (ext.toLowerCase()) {
-      case ".js":
+      case '.js':
           return ts.ScriptKind.JS;
-      case ".jsx":
+      case '.jsx':
           return ts.ScriptKind.JSX;
-      case ".ts":
+      case '.ts':
           return ts.ScriptKind.TS;
-      case ".tsx":
+      case '.tsx':
           return ts.ScriptKind.TSX;
       default:
           return ts.ScriptKind.Unknown;
@@ -64,10 +70,10 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     let text: string;
     try {
       text = fs.readFileSync(fileName, 'utf8');
+      return this.addFile(fileName, text).version;
     } catch (e) {
-      text = '';
+      return '';
     }
-    return this.addFile(fileName, text).version.toString();
   }
 
   // TODO: this should get from cache first, cache should be updated through watchers
@@ -75,10 +81,10 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     let text: string;
     try {
       text = fs.readFileSync(fileName, 'utf8');
+      return this.addFile(fileName, text).snapshot;
     } catch (e) {
-      text = '';
+      return undefined;
     }
-    return this.addFile(fileName, text).snapshot;
   }
 
   // SKIP: getLocalizedDiagnosticMessages?(): any;
@@ -89,8 +95,9 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return this.projectDirectory;
   }
 
-  // TODO: https://github.com/TypeStrong/atom-typescript/blob/8d43dd1b930a6df0ce62454a1560acfb7eee24c9/lib/main/lang/core/languageServiceHost2.ts#L205
-  //getDefaultLibFileName(options: CompilerOptions): string;
+  getDefaultLibFileName(options: ts.CompilerOptions): string {
+    return combinePaths(typescriptPath, ts.getDefaultLibFileName(options));
+  }
 
   log(s: string): void {
     _log.info('TypeScriptLanguageServiceHost', s);
@@ -108,9 +115,10 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return true;
   }
 
-  //resolveModuleNames?(moduleNames: string[], containingFile: string): ResolvedModule[];
+  // SKIP: resolveModuleNames?(moduleNames: string[], containingFile: string): ResolvedModule[];
 
-  //resolveTypeReferenceDirectives?(typeDirectiveNames: string[], containingFile: string): ResolvedTypeReferenceDirective[];
+  // SKIP: resolveTypeReferenceDirectives?(typeDirectiveNames: string[],
+  // containingFile: string): ResolvedTypeReferenceDirective[];
 
   // TODO: cache this too to this.directories: { [directoryName: string] : boolean }
   directoryExists(directoryName: string): boolean {

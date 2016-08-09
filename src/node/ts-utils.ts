@@ -1,8 +1,6 @@
-'use strict';
-
-import _ = require('lodash');
-import fs = require('fs');
-import path = require('path');
+import * as _ from 'lodash';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as ts from 'typescript';
 import * as log from './log';
 import ReadConfigError from './read-config-error';
@@ -14,12 +12,21 @@ import { getNodeSystem } from './ts-c-sys';
 
 const tsconfigResolveSync = require('tsconfig').resolveSync;
 const TSLint = require('tslint');
-const projects = {};
+
+export interface TypeScriptProject {
+  languageServiceHost: TypeScriptLanguageServiceHost;
+  languageService: ts.LanguageService;
+  program: ts.Program;
+  tsLintConfig?: any;
+}
+
+const projects: { [projectRoot: string]: TypeScriptProject } = {};
 
 function getProjectRoots(): string[] {
   return Object.keys(projects);
 }
 
+/*
 function readConfig(projectRoot) {
   const tsconfigPath = tsconfigResolveSync(projectRoot);
   const tsconfigContents = fs.readFileSync(tsconfigPath, 'utf8');
@@ -48,53 +55,39 @@ function readCompilerOptions(projectRoot): ts.CompilerOptions {
 
   return <ts.CompilerOptions> _.defaults(results.options, ts.getDefaultCompilerOptions());
 }
+*/
 
 function getTsLintConfig(projectRoot: string): IConfigurationFile {
   const tsLintConfigPath = TSLint.findConfigurationPath(null, projectRoot);
   return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
 
-export interface TypeScriptProject {
-  // compilerOptions: ts.CompilerOptions;
-  // compilerHost: ts.CompilerHost;
-  // languageService: ts.LanguageService;
-  program: ts.Program;
-  tsLintConfig?: any;
-}
-
 export function getTypeScriptProject(projectRoot): TypeScriptProject {
   projectRoot = normalizePath(projectRoot);
 
-  // set cwd to projectRoot because compiler checks where it's being launched from
-  // later when we pass around projectRoot we can actually cache results of this function
-  process.chdir(projectRoot);
-
-  /*
   if (projects[projectRoot]) {
     return projects[projectRoot];
   }
-  */
-
-  // const compilerOptions: ts.CompilerOptions = readCompilerOptions(projectRoot);
-  // const compilerHost: ts.CompilerHost = createCompilerHost(compilerOptions);
-  // const languageServiceHost: ts.LanguageServiceHost = new TypeScriptLanguageServiceHost();
-  // const languageService: ts.LanguageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
   const sys = getNodeSystem();
   const config = ts.readConfigFile('tsconfig.json', sys.readFile).config;
   const parsed: ts.ParsedCommandLine = ts.parseJsonConfigFileContent(config, sys, projectRoot);
   const options: ts.CompilerOptions = parsed.options;
   const fileNames: string[] = parsed.fileNames;
-  const host = ts.createCompilerHost(options, true);
-  const program = ts.createProgram(fileNames, options, host);
+  // process.chdir(projectRoot);
+  // const host = ts.createCompilerHost(options, true);
+  // const program = ts.createProgram(fileNames, options, host);
+  const languageServiceHost = new TypeScriptLanguageServiceHost(projectRoot, options, fileNames);
+  const languageService: ts.LanguageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
-  return {
-    // compilerOptions,
-    // compilerHost,
-    // languageService,
-    program,
+  projects[projectRoot] = {
+    languageServiceHost,
+    languageService,
+    program: languageService.getProgram(),
     tsLintConfig: getTsLintConfig(projectRoot)
   };
+
+  return projects[projectRoot];
 
   /*
   const extensions: string[] = ['.ts', '.tsx'];

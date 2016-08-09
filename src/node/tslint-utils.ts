@@ -4,7 +4,7 @@ import { ILinterOptionsRaw, LintResult } from 'tslint/lib/lint';
 export function mapLintResultFailures(failures): Array<CodeInspectionError> {
   return failures ? failures.map(failure => {
     return {
-      type: 'problem_type_error',
+      type: 'problem_type_warning',
       message: failure.failure + ' [' + failure.ruleName + ']',
       pos: {
         line: failure.startPosition.lineAndCharacter.line,
