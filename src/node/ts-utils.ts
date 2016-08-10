@@ -7,6 +7,7 @@ import { combinePaths, normalizePath } from './ts-path-utils';
 export interface TypeScriptProject {
   languageServiceHost: TypeScriptLanguageServiceHost;
   languageService: ts.LanguageService;
+  generalDiagnostics: ts.Diagnostic[];
   tsLintConfig?: any;
 }
 
@@ -35,9 +36,17 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
   const languageServiceHost = new TypeScriptLanguageServiceHost(projectRoot, options, fileNames);
   const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
+  // we only need to run this when project configuration changes
+  const program = languageService.getProgram();
+  const generalDiagnostics = [].concat(
+    program.getGlobalDiagnostics(),
+    program.getOptionsDiagnostics()
+  );
+
   projects[projectRoot] = {
     languageServiceHost,
     languageService,
+    generalDiagnostics,
     tsLintConfig: getTsLintConfig(projectRoot)
   };
 
@@ -68,10 +77,11 @@ export function onFileChange(notification: FileChangeNotification): void {
     if (isInProject) {
       const relativePath = '/' + notification.fullPath.substring(projectRoot.length);
       if (relativePath === '/tsconfig.json') {
-        const parsed = parseConfigFile(projectRoot);
-        project.languageServiceHost._updateCompilationSettings(parsed.options);
+        onProjectRefresh(projectRoot);
+        return;
       } else if (relativePath === '/tslint.json') {
         project.tsLintConfig = getTsLintConfig(projectRoot);
+        return;
       }
     }
 

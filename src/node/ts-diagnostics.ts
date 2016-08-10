@@ -23,25 +23,24 @@ export function createReportFromDiagnostics(diagnostics: ts.Diagnostic[]): CodeI
   };
 }
 
-export function getDiagnostics(projectRoot: string, filePath: string, fileContent: string, callback: (err?: Error, result?: CodeInspectionReport) => void): void {
+export function getDiagnostics(
+  projectRoot: string, filePath: string, fileContent: string,
+  callback: (err?: Error, result?: CodeInspectionReport) => void
+): void {
   try {
 
     const project: TypeScriptProject = getTypeScriptProject(projectRoot);
+
+    // make sure project is compilable
+    if (project.generalDiagnostics.length > 0) {
+      return callback(null, createReportFromDiagnostics(project.generalDiagnostics));
+    }
 
     // refresh the file in the service host
     project.languageServiceHost._addFile(filePath, fileContent);
 
     // get the program from languageService (we can't keep program in memory)
     const program: ts.Program = project.languageService.getProgram();
-
-    // TODO: move this to getProject, we only need to run this when project configuration changes
-    const generalDiagnostics = [].concat(
-      program.getGlobalDiagnostics(),
-      program.getOptionsDiagnostics()
-    );
-    if (generalDiagnostics.length > 0) {
-      return callback(null, createReportFromDiagnostics(generalDiagnostics));
-    }
 
     // run TypeScript file diagnostics
     const sourceFile = program.getSourceFile(filePath);
