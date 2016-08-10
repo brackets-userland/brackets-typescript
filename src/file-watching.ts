@@ -16,12 +16,12 @@ define(function (require, exports, module) {
     nodeDomain.exec('fileChange', notification);
   }
 
-  function handleProjectOpen(a,b,c,d) {
-    debugger;
+  function handleProjectOpen(evt, projectRoot) {
+    nodeDomain.exec('projectRefresh', projectRoot.fullPath);
   }
 
-  function handleProjectClose(a,b,c,d) {
-    debugger;
+  function handleProjectClose(evt, projectRoot) {
+    nodeDomain.exec('projectClose', projectRoot.fullPath);
   }
 
   module.exports = function () {
