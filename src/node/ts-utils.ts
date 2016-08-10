@@ -115,8 +115,7 @@ export function onFileChange(notification: FileChangeNotification): void {
       if (relativePath === '/tsconfig.json') {
         // TODO: we need to reload tsconfig.json
       } else if (relativePath === '/tslint.json') {
-        // TODO: we need to reload tslint.json
-        // projectConfig.tsLintConfig = getTsLintConfig(projectRoot);
+        project.tsLintConfig = getTsLintConfig(projectRoot);
       }
     }
 
