@@ -22,30 +22,30 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     });
   }
 
-  addFile(fileName: string, text: string): ScriptInfo | void {
+  _addFile(fileName: string, text: string): ScriptInfo | void {
     if (typeof text !== 'string' || text.length === 0) {
-      return this.readFile(fileName);
+      return this._readFile(fileName);
     }
     const snapshot = ts.ScriptSnapshot.fromString(text);
-    const version = this.getFileHash(text);
+    const version = this._getFileHash(text);
     this.files[fileName] = { version, snapshot };
     return this.files[fileName];
   }
 
-  clearFile(fileName: string): void {
+  _clearFile(fileName: string): void {
     delete this.files[fileName];
   }
 
-  readFile(fileName: string): ScriptInfo | void {
+  _readFile(fileName: string): ScriptInfo | void {
     try {
       const text = fs.readFileSync(fileName, 'utf8');
-      return text.length > 0 ? this.addFile(fileName, text) : this.clearFile(fileName);
+      return text.length > 0 ? this._addFile(fileName, text) : this._clearFile(fileName);
     } catch (e) {
-      return this.clearFile(fileName);
+      return this._clearFile(fileName);
     }
   }
 
-  getFileHash(text: string): string {
+  _getFileHash(text: string): string {
     const hash = crypto.createHash('md5');
     hash.update(text);
     return hash.digest('hex');
@@ -84,13 +84,13 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
 
   getScriptVersion(fileName: string): string {
     // TODO: get from cache first
-    const scriptInfo: ScriptInfo | void = this.readFile(fileName);
+    const scriptInfo: ScriptInfo | void = this._readFile(fileName);
     return scriptInfo ? scriptInfo.version : '';
   }
 
   getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined {
     // TODO: get from cache first
-    const scriptInfo: ScriptInfo | void = this.readFile(fileName);
+    const scriptInfo: ScriptInfo | void = this._readFile(fileName);
     return scriptInfo ? scriptInfo.snapshot : undefined;
   }
 
