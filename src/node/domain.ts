@@ -1,9 +1,5 @@
 'use strict';
 
-if (!global.Promise) {
-  require('any-promise/register/bluebird');
-}
-
 import { getCompletions } from './ts-completions';
 import { getDiagnostics } from './ts-diagnostics';
 import { onFileChange, onProjectRefresh, onProjectClose } from './ts-utils';
