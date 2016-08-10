@@ -83,13 +83,17 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
   }
 
   getScriptVersion(fileName: string): string {
-    // TODO: get from cache first
+    if (this.files[fileName]) {
+      return this.files[fileName].version;
+    }
     const scriptInfo: ScriptInfo | void = this._readFile(fileName);
     return scriptInfo ? scriptInfo.version : '';
   }
 
   getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined {
-    // TODO: get from cache first
+    if (this.files[fileName]) {
+      return this.files[fileName].snapshot;
+    }
     const scriptInfo: ScriptInfo | void = this._readFile(fileName);
     return scriptInfo ? scriptInfo.snapshot : undefined;
   }
