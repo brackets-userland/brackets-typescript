@@ -61,8 +61,9 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
 
   // SKIP: getProjectVersion?(): string;
 
+  // NOTE: this can only return '.ts', '.tsx' and '.d.ts' files
   getScriptFileNames(): string[] {
-    return Object.keys(this.files);
+    return Object.keys(this.files).filter(file => /\.tsx?$/.test(file));
   }
 
   getScriptKind(fileName: string): ts.ScriptKind {
