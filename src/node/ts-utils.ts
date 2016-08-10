@@ -2,7 +2,7 @@ import * as ts from 'typescript';
 import * as TSLint from 'tslint';
 import { IConfigurationFile } from 'tslint/lib/configuration';
 import { TypeScriptLanguageServiceHost } from './language-service-host';
-import { combinePaths, normalizePath } from './ts-c-core';
+import { combinePaths, normalizePath } from './ts-path-utils';
 
 export interface TypeScriptProject {
   languageServiceHost: TypeScriptLanguageServiceHost;
