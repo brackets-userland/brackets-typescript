@@ -22,11 +22,27 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     });
   }
 
-  addFile(fileName: string, text: string): ScriptInfo {
+  addFile(fileName: string, text: string): ScriptInfo | void {
+    if (typeof text !== 'string' || text.length === 0) {
+      return this.readFile(fileName);
+    }
     const snapshot = ts.ScriptSnapshot.fromString(text);
     const version = this.getFileHash(text);
     this.files[fileName] = { version, snapshot };
     return this.files[fileName];
+  }
+
+  clearFile(fileName: string): void {
+    delete this.files[fileName];
+  }
+
+  readFile(fileName: string): ScriptInfo | void {
+    try {
+      const text = fs.readFileSync(fileName, 'utf8');
+      return text.length > 0 ? this.addFile(fileName, text) : this.clearFile(fileName);
+    } catch (e) {
+      return this.clearFile(fileName);
+    }
   }
 
   getFileHash(text: string): string {
@@ -65,26 +81,16 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     }
   }
 
-  // TODO: this could be done through MD5 hashing
   getScriptVersion(fileName: string): string {
-    let text: string;
-    try {
-      text = fs.readFileSync(fileName, 'utf8');
-      return this.addFile(fileName, text).version;
-    } catch (e) {
-      return '';
-    }
+    // TODO: get from cache first
+    const scriptInfo: ScriptInfo | void = this.readFile(fileName);
+    return scriptInfo ? scriptInfo.version : '';
   }
 
-  // TODO: this should get from cache first, cache should be updated through watchers
   getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined {
-    let text: string;
-    try {
-      text = fs.readFileSync(fileName, 'utf8');
-      return this.addFile(fileName, text).snapshot;
-    } catch (e) {
-      return undefined;
-    }
+    // TODO: get from cache first
+    const scriptInfo: ScriptInfo | void = this.readFile(fileName);
+    return scriptInfo ? scriptInfo.snapshot : undefined;
   }
 
   // SKIP: getLocalizedDiagnosticMessages?(): any;

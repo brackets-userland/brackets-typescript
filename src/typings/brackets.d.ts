@@ -12,6 +12,17 @@ interface CodeInspectionError {
   pos: CodeInspectionPosition;
 }
 
+interface CodeInspectionReport {
+  errors: CodeInspectionError[];
+}
+
+interface CodeHintsReport {
+  hints: string[];
+  match: string;
+  selectInitial: boolean;
+  handleWideResults: boolean;
+}
+
 interface FileChangeNotification {
   type: string;
   fullPath: string;

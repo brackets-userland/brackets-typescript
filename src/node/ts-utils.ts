@@ -69,6 +69,7 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
     return projects[projectRoot];
   }
 
+  log.info(`creating TypeScript project ${projectRoot}`);
   const sys = getNodeSystem();
   const config = ts.readConfigFile('tsconfig.json', sys.readFile).config;
   const parsed: ts.ParsedCommandLine = ts.parseJsonConfigFileContent(config, sys, projectRoot);

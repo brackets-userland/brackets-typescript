@@ -1,18 +1,11 @@
-import * as _ from 'lodash';
 import * as log from './log';
 import * as ts from 'typescript';
 import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 import { executeTsLint } from './tslint-utils';
 
-export function mapDiagnostics(diagnostics) {
+export function createReportFromDiagnostics(diagnostics: ts.Diagnostic[]): CodeInspectionReport {
   return {
-    errors: diagnostics.map(function (diagnostic) {
-      // sample: {"start":255,"length":1,"messageText":"Cannot find name 's'.","category":1,"code":2304}
-      // sample2: { file: undefined, start: undefined, length: undefined,
-      // messageText: 'Cannot find global type \'String\'.', category: 1, code: 2318 }
-      const messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
-      const message = 'TS' + diagnostic.code + ': ' + messageText;
-
+    errors: diagnostics.map((diagnostic: ts.Diagnostic) => {
       let line = 0;
       let ch = 0;
       if (diagnostic.file) {
@@ -23,47 +16,44 @@ export function mapDiagnostics(diagnostics) {
 
       return {
         type: 'problem_type_error',
-        message: message,
-        pos: {
-          line: line,
-          ch: ch
-        }
+        message: 'TS' + diagnostic.code + ': ' + ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '),
+        pos: { line, ch }
       };
     })
   };
 }
 
-export function getDiagnostics(projectRoot, fullPath, code, callback) {
-  const project: TypeScriptProject = getTypeScriptProject(projectRoot);
+export function getDiagnostics(projectRoot: string, filePath: string, fileContent: string, callback: (err?: Error, result?: CodeInspectionReport) => void): void {
   try {
-    // TODO: obj.host.addFile(fullPath, code);
 
-    const program: ts.Program = project.program;
+    const project: TypeScriptProject = getTypeScriptProject(projectRoot);
 
+    // refresh the file in the service host
+    project.languageServiceHost.addFile(filePath, fileContent);
+
+    // TODO: move this to getProject, we only need to run this when project configuration changes
     const generalDiagnostics = [].concat(
-      program.getGlobalDiagnostics(),
-      program.getOptionsDiagnostics()
+      project.program.getGlobalDiagnostics(),
+      project.program.getOptionsDiagnostics()
     );
     if (generalDiagnostics.length > 0) {
-      return callback(null, mapDiagnostics(generalDiagnostics));
+      return callback(null, createReportFromDiagnostics(generalDiagnostics));
     }
 
-    const sourceFile = program.getSourceFile(fullPath);
-
+    // run TypeScript file diagnostics
+    const sourceFile = project.program.getSourceFile(filePath);
     const fileDiagnostics = [].concat(
-      program.getDeclarationDiagnostics(sourceFile),
-      program.getSemanticDiagnostics(sourceFile),
-      program.getSyntacticDiagnostics(sourceFile)
+      project.program.getDeclarationDiagnostics(sourceFile),
+      project.program.getSemanticDiagnostics(sourceFile),
+      project.program.getSyntacticDiagnostics(sourceFile)
     );
     if (fileDiagnostics.length > 0) {
-      return callback(null, mapDiagnostics(fileDiagnostics));
+      return callback(null, createReportFromDiagnostics(fileDiagnostics));
     }
-
-    // TODO: const typeChecker /*: ts.TypeChecker */ = program.getTypeChecker();
 
     // if config for TSLint is present in the project, run TSLint checking
     if (project.tsLintConfig) {
-      const errors = executeTsLint(fullPath, code, project.tsLintConfig, program);
+      const errors = executeTsLint(filePath, fileContent, project.tsLintConfig, project.program);
       if (errors.length > 0) {
         return callback(null, { errors });
       }
@@ -72,10 +62,7 @@ export function getDiagnostics(projectRoot, fullPath, code, callback) {
     // no errors found
     return callback(null, { errors: [] });
   } catch (err) {
-    if (err.name === 'ReadConfigError') {
-      return callback(null, mapDiagnostics([ err ]));
-    }
-    log.error(err);
+    log.error(err.stack);
     return callback(err);
   }
 };
