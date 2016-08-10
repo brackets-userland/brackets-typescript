@@ -1,17 +1,8 @@
-import * as _ from 'lodash';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as ts from 'typescript';
-import * as log from './log';
-import ReadConfigError from './read-config-error';
+import * as TSLint from 'tslint';
 import { IConfigurationFile } from 'tslint/lib/configuration';
-import { createCompilerHost } from './ts-c-program';
 import { TypeScriptLanguageServiceHost } from './language-service-host';
-import { normalizePath } from './ts-c-core';
-import { getNodeSystem } from './ts-c-sys';
-
-// const tsconfigResolveSync = require('tsconfig').resolveSync;
-const TSLint = require('tslint');
+import { combinePaths, normalizePath } from './ts-c-core';
 
 export interface TypeScriptProject {
   languageServiceHost: TypeScriptLanguageServiceHost;
@@ -21,44 +12,14 @@ export interface TypeScriptProject {
 
 const projects: { [projectRoot: string]: TypeScriptProject } = {};
 
-function getProjectRoots(): string[] {
-  return Object.keys(projects);
-}
-
-/*
-function readConfig(projectRoot) {
-  const tsconfigPath = tsconfigResolveSync(projectRoot);
-  const tsconfigContents = fs.readFileSync(tsconfigPath, 'utf8');
-
-  const rawConfig = ts.parseConfigFileTextToJson(tsconfigPath, tsconfigContents);
-  if (rawConfig.error) {
-    throw new ReadConfigError(rawConfig.error.code, rawConfig.error.messageText);
-  }
-
-  return rawConfig.config;
-}
-
-function readCompilerOptions(projectRoot): ts.CompilerOptions {
-  const tsconfigPath = tsconfigResolveSync(projectRoot);
-  const tsconfigDir = tsconfigPath ? path.dirname(tsconfigPath) : projectRoot;
-  const rawConfig = readConfig(projectRoot);
-
-  const results: {
-    options: ts.CompilerOptions;
-    errors: ts.Diagnostic[];
-  } = ts.convertCompilerOptionsFromJson(rawConfig.compilerOptions, tsconfigDir);
-
-  if (results.errors && results.errors.length > 0) {
-    throw new ReadConfigError(results.errors[0].code, results.errors[0].messageText);
-  }
-
-  return <ts.CompilerOptions> _.defaults(results.options, ts.getDefaultCompilerOptions());
-}
-*/
-
 function getTsLintConfig(projectRoot: string): IConfigurationFile {
   const tsLintConfigPath = TSLint.findConfigurationPath(null, projectRoot);
   return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
+}
+
+function parseConfigFile(projectRoot: string): ts.ParsedCommandLine {
+  const config = ts.readConfigFile(combinePaths(projectRoot, 'tsconfig.json'), ts.sys.readFile).config;
+  return ts.parseJsonConfigFileContent(config, ts.sys, projectRoot);
 }
 
 export function getTypeScriptProject(projectRoot): TypeScriptProject {
@@ -68,15 +29,9 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
     return projects[projectRoot];
   }
 
-  log.info(`creating TypeScript project ${projectRoot}`);
-  const sys = getNodeSystem();
-  const config = ts.readConfigFile('tsconfig.json', sys.readFile).config;
-  const parsed: ts.ParsedCommandLine = ts.parseJsonConfigFileContent(config, sys, projectRoot);
+  const parsed = parseConfigFile(projectRoot);
   const options: ts.CompilerOptions = parsed.options;
   const fileNames: string[] = parsed.fileNames;
-  // process.chdir(projectRoot);
-  // const host = ts.createCompilerHost(options, true);
-  // const program = ts.createProgram(fileNames, options, host);
   const languageServiceHost = new TypeScriptLanguageServiceHost(projectRoot, options, fileNames);
   const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
@@ -105,7 +60,7 @@ export function onProjectClose(projectRoot: string): void {
 
 export function onFileChange(notification: FileChangeNotification): void {
   notification.fullPath = normalizePath(notification.fullPath);
-  getProjectRoots().forEach(projectRoot => {
+  Object.keys(projects).forEach(projectRoot => {
 
     const project = projects[projectRoot];
 
@@ -113,7 +68,8 @@ export function onFileChange(notification: FileChangeNotification): void {
     if (isInProject) {
       const relativePath = '/' + notification.fullPath.substring(projectRoot.length);
       if (relativePath === '/tsconfig.json') {
-        // TODO: we need to reload tsconfig.json
+        const parsed = parseConfigFile(projectRoot);
+        project.languageServiceHost._updateCompilationSettings(parsed.options);
       } else if (relativePath === '/tslint.json') {
         project.tsLintConfig = getTsLintConfig(projectRoot);
       }

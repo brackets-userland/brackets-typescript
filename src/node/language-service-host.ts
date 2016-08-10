@@ -63,6 +63,10 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     });
   }
 
+  _updateCompilationSettings(options: ts.CompilerOptions): void {
+    this.compilationSettings = options;
+  }
+
   getCompilationSettings(): ts.CompilerOptions {
     return this.compilationSettings;
   }
