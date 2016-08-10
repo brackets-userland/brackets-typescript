@@ -6,7 +6,7 @@ if (!global.Promise) {
 
 import { getCompletions } from './ts-completions';
 import { getDiagnostics } from './ts-diagnostics';
-import { fileChange } from './ts-utils';
+import { onFileChange, onProjectRefresh, onProjectClose } from './ts-utils';
 
 const PackageJson = require('../../package.json');
 const EXTENSION_NAME = PackageJson.name;
@@ -24,11 +24,37 @@ exports.init = function (_domainManager) {
   domainManager.registerCommand(
     domainName,
     'fileChange', // command name
-    fileChange, // handler function
+    onFileChange, // handler function
     false, // is not async
     'fileChange', // description
     [
       { name: 'fileChangeNotification', type: 'object' }
+    ], [
+      { name: 'processed', type: 'boolean' }
+    ]
+  );
+
+  domainManager.registerCommand(
+    domainName,
+    'projectRefresh', // command name
+    onProjectRefresh, // handler function
+    false, // is not async
+    'projectRefresh', // description
+    [
+      { name: 'projectRoot', type: 'string' }
+    ], [
+      { name: 'processed', type: 'boolean' }
+    ]
+  );
+
+  domainManager.registerCommand(
+    domainName,
+    'projectClose', // command name
+    onProjectClose, // handler function
+    false, // is not async
+    'projectClose', // description
+    [
+      { name: 'projectRoot', type: 'string' }
     ], [
       { name: 'processed', type: 'boolean' }
     ]
