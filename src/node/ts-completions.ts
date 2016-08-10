@@ -5,8 +5,8 @@ import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 
 const fuzzaldrin: { filter: (list: any[], prefix: string, property?: { key: string }) => any } = require('fuzzaldrin');
 
-function mapCompletions(completions: ts.CompletionInfo, prefix: string): CodeHintsReport {
-  let entries: ts.CompletionEntry[] = completions ? completions.entries : [];
+function createReportFromCompletionInfo(completionInfo: ts.CompletionInfo, prefix: string): CodeHintsReport {
+  let entries: ts.CompletionEntry[] = completionInfo ? completionInfo.entries : [];
 
   log.info('mapCompletions', entries.length.toString(), prefix);
 
@@ -55,20 +55,14 @@ export function getCompletions(
     // refresh the file in the service host
     project.languageServiceHost._addFile(filePath, fileContent);
 
+    // we need to parse current word before cursor position
     const codeBeforeCursor = fileContent.slice(0, position);
-    let isMemberCompletion = false;
-    let currentWord = null;
-    let match = codeBeforeCursor.match(/\.([\$_a-zA-Z0-9]*$)/);
-    if (match && match.length > 0) {
-      isMemberCompletion = true;
-      currentWord = match[1];
-    } else {
-      match = codeBeforeCursor.match(/[\$_a-zA-Z0-9]+$/);
-      currentWord = match ? match[0] : null;
-    }
+    const match = codeBeforeCursor.match(/[\$_a-zA-Z0-9]+$/);
+    const currentWord = match ? match[0] : null;
 
-    const completions = project.languageService.getCompletionsAtPosition(filePath, position);
-    return callback(null, mapCompletions(completions, currentWord));
+    // get results from getCompletionsAtPosition and convert them for Brackets
+    const completionInfo = project.languageService.getCompletionsAtPosition(filePath, position);
+    return callback(null, createReportFromCompletionInfo(completionInfo, currentWord));
   } catch (err) {
     log.error(err.stack);
     return callback(err);
