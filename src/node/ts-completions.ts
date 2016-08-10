@@ -8,8 +8,6 @@ const fuzzaldrin: { filter: (list: any[], prefix: string, property?: { key: stri
 function createReportFromCompletionInfo(completionInfo: ts.CompletionInfo, prefix: string): CodeHintsReport {
   let entries: ts.CompletionEntry[] = completionInfo ? completionInfo.entries : [];
 
-  log.info('mapCompletions', entries.length.toString(), prefix);
-
   if (prefix) {
     entries = fuzzaldrin.filter(entries, prefix, { key: 'name' });
   }

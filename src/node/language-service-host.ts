@@ -52,11 +52,15 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
   }
 
   _wasFileModified(fileName: string): void {
-    _log.info('_wasFileModified', fileName);
+    this._clearFile(fileName);
   }
 
   _wasDirectoryModified(directoryName: string): void {
-    _log.info('_wasDirectoryModified', directoryName);
+    Object.keys(this.files).forEach(fileName => {
+      if (fileName.indexOf(directoryName) === 0) {
+        this._clearFile(fileName);
+      }
+    });
   }
 
   getCompilationSettings(): ts.CompilerOptions {
