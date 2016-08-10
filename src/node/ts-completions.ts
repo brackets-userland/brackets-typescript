@@ -6,7 +6,7 @@ import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 const escapeStringRegexp = require('escape-string-regexp');
 
 function mapCompletions(completions: ts.CompletionInfo, currentWord: string): CodeHintsReport {
-  const entries = _.get(completions, 'entries', []);
+  const entries = completions ? completions.entries : [];
 
   let hints = _.sortBy(entries, (entry) => {
     let sort = entry.sortText;
@@ -29,7 +29,10 @@ function mapCompletions(completions: ts.CompletionInfo, currentWord: string): Co
   };
 }
 
-export function getCompletions(projectRoot: string, filePath: string, fileContent: string, position: number, callback: (err?: Error, result?: CodeHintsReport) => void): void {
+export function getCompletions(
+  projectRoot: string, filePath: string, fileContent: string, position: number,
+  callback: (err?: Error, result?: CodeHintsReport) => void
+): void {
   try {
 
     const project: TypeScriptProject = getTypeScriptProject(projectRoot);
@@ -49,11 +52,7 @@ export function getCompletions(projectRoot: string, filePath: string, fileConten
       currentWord = match ? match[0] : null;
     }
 
-    // TODO: invalid typescript typings, we need to cast to <any> below to avoid compilation errors
-    const completions: ts.CompletionInfo = (<any> project.languageService).getCompletionsAtPosition(
-      filePath, position, isMemberCompletion
-    );
-
+    const completions = project.languageService.getCompletionsAtPosition(filePath, position);
     return callback(null, mapCompletions(completions, currentWord));
   } catch (err) {
     log.error(err.stack);
