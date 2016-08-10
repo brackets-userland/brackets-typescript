@@ -17,7 +17,16 @@ function mapCompletions(completions: ts.CompletionInfo, prefix: string): CodeHin
   entries = _.sortBy(entries, (entry: ts.CompletionEntry) => {
     let sort = entry.sortText;
     if (prefix) {
-      sort += entry.name.indexOf(prefix) === 0 ? '0' : '1';
+      if (entry.name.indexOf(prefix) === 0) {
+        // starts with prefix case sensitive
+        sort += '0';
+      } else if (entry.name.toLowerCase().indexOf(prefix.toLowerCase()) === 0) {
+        // starts with prefix case in-sensitive
+        sort += '1';
+      } else {
+        // other matches (fuzzy search)
+        sort += '2';
+      }
     }
     return sort + entry.name.toLowerCase();
   });
