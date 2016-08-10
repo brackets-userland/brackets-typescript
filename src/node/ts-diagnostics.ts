@@ -31,21 +31,24 @@ export function getDiagnostics(projectRoot: string, filePath: string, fileConten
     // refresh the file in the service host
     project.languageServiceHost.addFile(filePath, fileContent);
 
+    // get the program from languageService (we can't keep program in memory)
+    const program: ts.Program = project.languageService.getProgram();
+
     // TODO: move this to getProject, we only need to run this when project configuration changes
     const generalDiagnostics = [].concat(
-      project.program.getGlobalDiagnostics(),
-      project.program.getOptionsDiagnostics()
+      program.getGlobalDiagnostics(),
+      program.getOptionsDiagnostics()
     );
     if (generalDiagnostics.length > 0) {
       return callback(null, createReportFromDiagnostics(generalDiagnostics));
     }
 
     // run TypeScript file diagnostics
-    const sourceFile = project.program.getSourceFile(filePath);
+    const sourceFile = program.getSourceFile(filePath);
     const fileDiagnostics = [].concat(
-      project.program.getDeclarationDiagnostics(sourceFile),
-      project.program.getSemanticDiagnostics(sourceFile),
-      project.program.getSyntacticDiagnostics(sourceFile)
+      program.getDeclarationDiagnostics(sourceFile),
+      program.getSemanticDiagnostics(sourceFile),
+      program.getSyntacticDiagnostics(sourceFile)
     );
     if (fileDiagnostics.length > 0) {
       return callback(null, createReportFromDiagnostics(fileDiagnostics));
@@ -53,7 +56,7 @@ export function getDiagnostics(projectRoot: string, filePath: string, fileConten
 
     // if config for TSLint is present in the project, run TSLint checking
     if (project.tsLintConfig) {
-      const errors = executeTsLint(filePath, fileContent, project.tsLintConfig, project.program);
+      const errors = executeTsLint(filePath, fileContent, project.tsLintConfig, program);
       if (errors.length > 0) {
         return callback(null, { errors });
       }

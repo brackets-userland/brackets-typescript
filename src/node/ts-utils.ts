@@ -16,7 +16,6 @@ const TSLint = require('tslint');
 export interface TypeScriptProject {
   languageServiceHost: TypeScriptLanguageServiceHost;
   languageService: ts.LanguageService;
-  program: ts.Program;
   tsLintConfig?: any;
 }
 
@@ -84,7 +83,6 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
   projects[projectRoot] = {
     languageServiceHost,
     languageService,
-    program: languageService.getProgram(),
     tsLintConfig: getTsLintConfig(projectRoot)
   };
 
