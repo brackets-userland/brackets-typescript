@@ -87,37 +87,24 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
   };
 
   return projects[projectRoot];
-
-  /*
-  const extensions: string[] = ['.ts', '.tsx'];
-  const includes: string[] = config.files;
-  const excludes: string[] = config.exclude;
-
-  excludes.push('.git');
-  if (config.compilerOptions.outDir) {
-    excludes.push(config.compilerOptions.outDir);
-  }
-
-  const fileMatcherPatterns = getFileMatcherPatterns(projectRoot, extensions, excludes, includes);
-  const fileMatcherData = getFileMatcherData(fileMatcherPatterns, extensions);
-  return matchFilesInProject(projectRoot, fileMatcherPatterns.basePaths, fileMatcherData).then(files => {
-    return Promise.all(files.map(function (relativePath) {
-      return host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
-    }));
-  }).then(() => {
-    projects[projectRoot] = {
-      host,
-      languageService,
-      fileMatcherPatterns,
-      fileMatcherData,
-      tsLintConfig: getTsLintConfig(projectRoot)
-    };
-    return projects[projectRoot];
-  });
-  */
 }
 
-export function fileChange(notification: FileChangeNotification): void {
+export function onProjectRefresh(projectRoot: string): void {
+  projectRoot = normalizePath(projectRoot);
+  if (projects[projectRoot]) {
+    // re-initialize project
+    delete projects[projectRoot];
+    getTypeScriptProject(projectRoot);
+  }
+}
+
+export function onProjectClose(projectRoot: string): void {
+  projectRoot = normalizePath(projectRoot);
+  delete projects[projectRoot];
+}
+
+export function onFileChange(notification: FileChangeNotification): void {
+  notification.fullPath = normalizePath(notification.fullPath);
   getProjectRoots().forEach(projectRoot => {
 
     const project = projects[projectRoot];
