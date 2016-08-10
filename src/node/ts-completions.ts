@@ -53,7 +53,7 @@ export function getCompletions(
     const project: TypeScriptProject = getTypeScriptProject(projectRoot);
 
     // refresh the file in the service host
-    project.languageServiceHost.addFile(filePath, fileContent);
+    project.languageServiceHost._addFile(filePath, fileContent);
 
     const codeBeforeCursor = fileContent.slice(0, position);
     let isMemberCompletion = false;

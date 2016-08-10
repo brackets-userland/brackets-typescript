@@ -29,7 +29,7 @@ export function getDiagnostics(projectRoot: string, filePath: string, fileConten
     const project: TypeScriptProject = getTypeScriptProject(projectRoot);
 
     // refresh the file in the service host
-    project.languageServiceHost.addFile(filePath, fileContent);
+    project.languageServiceHost._addFile(filePath, fileContent);
 
     // get the program from languageService (we can't keep program in memory)
     const program: ts.Program = project.languageService.getProgram();
