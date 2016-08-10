@@ -78,7 +78,7 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
   // const host = ts.createCompilerHost(options, true);
   // const program = ts.createProgram(fileNames, options, host);
   const languageServiceHost = new TypeScriptLanguageServiceHost(projectRoot, options, fileNames);
-  const languageService: ts.LanguageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
+  const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
   projects[projectRoot] = {
     languageServiceHost,
@@ -117,33 +117,29 @@ export function getTypeScriptProject(projectRoot): TypeScriptProject {
   */
 }
 
-export function fileChange(fileChangeNotification: FileChangeNotification): void {
-  /*
+export function fileChange(notification: FileChangeNotification): void {
   getProjectRoots().forEach(projectRoot => {
-    if (fileChangeNotification.fullPath.indexOf(projectRoot) !== 0) {
-      // not in this project
-      return;
+
+    const project = projects[projectRoot];
+
+    const isInProject = notification.fullPath.indexOf(projectRoot) === 0;
+    if (isInProject) {
+      const relativePath = '/' + notification.fullPath.substring(projectRoot.length);
+      if (relativePath === '/tsconfig.json') {
+        // TODO: we need to reload tsconfig.json
+      } else if (relativePath === '/tslint.json') {
+        // TODO: we need to reload tslint.json
+        // projectConfig.tsLintConfig = getTsLintConfig(projectRoot);
+      }
     }
 
-    const projectConfig = projects[projectRoot];
-    const relativePath = '/' + fileChangeNotification.fullPath.substring(projectRoot.length);
-
-    if (relativePath === '/tslint.json') {
-      projectConfig.tsLintConfig = getTsLintConfig(projectRoot);
+    if (notification.isFile) {
+      project.languageServiceHost._wasFileModified(notification.fullPath);
     }
 
-    if (fileChangeNotification.isFile && isFileMatching(relativePath, projectConfig.fileMatcherData)) {
-      projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, relativePath)));
-      return;
+    if (notification.isDirectory) {
+      project.languageServiceHost._wasDirectoryModified(notification.fullPath);
     }
 
-    if (fileChangeNotification.isDirectory && isDirectoryMatching(relativePath, projectConfig.fileMatcherData)) {
-      matchFilesInDirectory(relativePath, combinePaths(projectRoot, relativePath), projectConfig.fileMatcherData)
-        .then(files => files.map(file =>
-          projectConfig.host.$addFileAsync(normalizePath(combinePaths(projectRoot, file)))
-        ));
-      return;
-    }
   });
-  */
 };

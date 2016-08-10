@@ -51,6 +51,14 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return hash.digest('hex');
   }
 
+  _wasFileModified(fileName: string): void {
+    _log.info('_wasFileModified', fileName);
+  }
+
+  _wasDirectoryModified(directoryName: string): void {
+    _log.info('_wasDirectoryModified', directoryName);
+  }
+
   getCompilationSettings(): ts.CompilerOptions {
     return this.compilationSettings;
   }
