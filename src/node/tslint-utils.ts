@@ -1,21 +1,18 @@
+import * as _ from 'lodash';
 import * as TSLint from 'tslint';
 import { ILinterOptionsRaw, LintResult } from 'tslint/lib/lint';
 
 export function mapLintResultFailures(failures): Array<CodeInspectionError> {
-  if (failures) {
-    return failures.map(failure => {
-      return {
-        type: 'problem_type_warning',
-        message: failure.failure + ' [' + failure.ruleName + ']',
-        pos: {
-          line: failure.startPosition.lineAndCharacter.line,
-          ch: failure.startPosition.lineAndCharacter.character
-        }
-      };
-    });
-  } else {
-    return [];
-  }
+  return (failures || []).map(failure => {
+    return {
+      type: 'problem_type_warning',
+      message: failure.failure + ' [' + failure.ruleName + ']',
+      pos: {
+        line: failure.startPosition.lineAndCharacter.line,
+        ch: failure.startPosition.lineAndCharacter.character
+      }
+    };
+  });
 }
 
 export function executeTsLint(fullPath, code, tsLintConfig, program): Array<CodeInspectionError> {
@@ -25,7 +22,7 @@ export function executeTsLint(fullPath, code, tsLintConfig, program): Array<Code
     };
     const tsLinter = new TSLint(fullPath, code, options, program);
     const result: LintResult = tsLinter.lint();
-    return mapLintResultFailures(result.failures);
+    return _.sortBy(mapLintResultFailures(result.failures), item => item.pos.line);
   } catch (err) {
     return [{
       type: 'problem_type_error',

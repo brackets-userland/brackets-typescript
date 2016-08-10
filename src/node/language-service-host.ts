@@ -1,5 +1,5 @@
 import * as _log from './log';
-import { combinePaths, normalizePath } from './ts-c-core';
+import { combinePaths, normalizePath } from './ts-path-utils';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
