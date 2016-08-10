@@ -10,7 +10,7 @@ import { TypeScriptLanguageServiceHost } from './language-service-host';
 import { normalizePath } from './ts-c-core';
 import { getNodeSystem } from './ts-c-sys';
 
-const tsconfigResolveSync = require('tsconfig').resolveSync;
+// const tsconfigResolveSync = require('tsconfig').resolveSync;
 const TSLint = require('tslint');
 
 export interface TypeScriptProject {

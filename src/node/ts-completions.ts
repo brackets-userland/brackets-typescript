@@ -3,27 +3,33 @@ import * as log from './log';
 import * as ts from 'typescript';
 import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 
-const escapeStringRegexp = require('escape-string-regexp');
+const fuzzaldrin: { filter: (list: any[], prefix: string, property?: { key: string }) => any } = require('fuzzaldrin');
 
-function mapCompletions(completions: ts.CompletionInfo, currentWord: string): CodeHintsReport {
-  const entries = completions ? completions.entries : [];
+function mapCompletions(completions: ts.CompletionInfo, prefix: string): CodeHintsReport {
+  let entries: ts.CompletionEntry[] = completions ? completions.entries : [];
 
-  let hints = _.sortBy(entries, (entry) => {
+  log.info('mapCompletions', entries.length.toString(), prefix);
+
+  if (prefix) {
+    entries = fuzzaldrin.filter(entries, prefix, { key: 'name' });
+  }
+
+  entries = _.sortBy(entries, (entry: ts.CompletionEntry) => {
     let sort = entry.sortText;
-    if (currentWord) {
-      sort += entry.name.indexOf(currentWord) === 0 ? '0' : '1';
+    if (prefix) {
+      sort += entry.name.indexOf(prefix) === 0 ? '0' : '1';
     }
     return sort + entry.name.toLowerCase();
-  }).map(entry => entry.name);
+  });
 
-  if (currentWord) {
-    const re = new RegExp('^' + escapeStringRegexp(currentWord), 'i');
-    hints = hints.filter(h => re.test(h));
+  const MAX_COMPLETIONS = 50;
+  if (entries.length > MAX_COMPLETIONS) {
+    entries = entries.slice(0, MAX_COMPLETIONS);
   }
 
   return {
-    hints: hints,
-    match: currentWord,
+    hints: entries.map(entry => entry.name),
+    match: prefix,
     selectInitial: true,
     handleWideResults: false
   };
