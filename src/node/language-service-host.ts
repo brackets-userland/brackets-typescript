@@ -15,6 +15,7 @@ export interface ScriptInfo {
 export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
 
   private files: { [fileName: string]: ScriptInfo } = {};
+  private directories: { [directoryName: string]: string[] } = {};
 
   constructor (private projectDirectory: string, private compilationSettings: ts.CompilerOptions, fileNames: string[]) {
     fileNames.forEach(fileName => {
@@ -45,6 +46,10 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     }
   }
 
+  _clearDirectory(directoryName: string): void {
+    delete this.directories[directoryName];
+  }
+
   _getFileHash(text: string): string {
     const hash = crypto.createHash('md5');
     hash.update(text);
@@ -56,9 +61,14 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
   }
 
   _wasDirectoryModified(directoryName: string): void {
-    Object.keys(this.files).forEach(fileName => {
-      if (fileName.indexOf(directoryName) === 0) {
-        this._clearFile(fileName);
+    Object.keys(this.files).forEach(_fileName => {
+      if (_fileName.indexOf(directoryName) === 0) {
+        this._clearFile(_fileName);
+      }
+    });
+    Object.keys(this.directories).forEach(_directoryName => {
+      if (_directoryName.indexOf(directoryName) === 0) {
+        this._clearDirectory(_directoryName);
       }
     });
   }
@@ -145,19 +155,28 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
   // SKIP: resolveModuleNames?(moduleNames: string[], containingFile: string): ResolvedModule[];
 
   // SKIP: resolveTypeReferenceDirectives?(typeDirectiveNames: string[],
-  // containingFile: string): ResolvedTypeReferenceDirective[];
+  //       containingFile: string): ResolvedTypeReferenceDirective[];
 
-  // TODO: cache this too to this.directories: { [directoryName: string] : boolean }
   directoryExists(directoryName: string): boolean {
-    try {
-      return fs.statSync(directoryName).isDirectory();
-    } catch (e) {
-      return false;
+    if (this.directories[directoryName]) {
+      return true;
     }
+    let exists;
+    try {
+      exists = fs.statSync(directoryName).isDirectory();
+    } catch (e) {
+      exists = false;
+    }
+    if (exists) {
+      this.directories[directoryName] = this.getDirectories(directoryName);
+    }
+    return exists;
   }
 
-  // TODO: somehow cache this info
   getDirectories(directoryName: string): string[] {
+    if (this.directories[directoryName]) {
+      return this.directories[directoryName];
+    }
     return fs.readdirSync(directoryName).reduce((result, p) => {
       if (this.directoryExists(combinePaths(directoryName, p))) {
         result.push(p);
