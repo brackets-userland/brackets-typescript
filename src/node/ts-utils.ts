@@ -86,7 +86,12 @@ export function onFileChange(notification: FileChangeNotification): void {
     }
 
     if (notification.isFile) {
-      project.languageServiceHost._wasFileModified(notification.fullPath);
+      const processed = project.languageServiceHost._wasFileModified(notification.fullPath);
+      if (!processed) {
+        // maybe a new file, which should be included in the project
+        onProjectRefresh(projectRoot);
+        return;
+      }
     }
 
     if (notification.isDirectory) {

@@ -56,8 +56,14 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return hash.digest('hex');
   }
 
-  _wasFileModified(fileName: string): void {
-    this._clearFile(fileName);
+  _wasFileModified(fileName: string): boolean {
+    const hasFile = !!this.files[fileName];
+    if (hasFile) {
+      // reload file from fs
+      this._clearFile(fileName);
+      this.getScriptSnapshot(fileName);
+    }
+    return hasFile;
   }
 
   _wasDirectoryModified(directoryName: string): void {
