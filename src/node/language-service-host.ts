@@ -60,8 +60,7 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     const hasFile = !!this.files[fileName];
     if (hasFile) {
       // reload file from fs
-      this._clearFile(fileName);
-      this.getScriptSnapshot(fileName);
+      this._readFile(fileName);
     }
     return hasFile;
   }
@@ -69,7 +68,8 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
   _wasDirectoryModified(directoryName: string): void {
     Object.keys(this.files).forEach(_fileName => {
       if (_fileName.indexOf(directoryName) === 0) {
-        this._clearFile(_fileName);
+        // reload file from fs
+        this._readFile(_fileName);
       }
     });
     Object.keys(this.directories).forEach(_directoryName => {

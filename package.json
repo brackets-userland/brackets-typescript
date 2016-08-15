@@ -1,6 +1,6 @@
 {
   "name": "brackets-typescript",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "title": "TypeScript",
   "description": "Adds TypeScript support to Brackets",
   "keywords": [
