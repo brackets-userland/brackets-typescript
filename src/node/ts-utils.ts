@@ -115,10 +115,14 @@ export function onFileChange(notification: FileChangeNotification): void {
   }
 
   // if it's tslint.json, update tsLintConfig of the project
-  // TODO: and all of the projects under it, because they inherit configuration
+  // and all of the projects under it, because they inherit configuration
   if (/\/tslint\.json$/i.test(notification.fullPath)) {
     const parentDir = normalizePath(path.dirname(notification.fullPath));
-    onProjectRefresh(parentDir);
+    Object.keys(projects).forEach(projectRoot => {
+      if (projectRoot.indexOf(parentDir) === 0) {
+        onProjectRefresh(projectRoot);
+      }
+    });
     return;
   }
 
