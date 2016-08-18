@@ -48,7 +48,7 @@ export function getCompletions(
 ): void {
   try {
 
-    const project: TypeScriptProject = getTypeScriptProject(projectRoot);
+    const project: TypeScriptProject = getTypeScriptProject(projectRoot, filePath);
 
     // refresh the file in the service host
     project.languageServiceHost._addFile(filePath, fileContent);

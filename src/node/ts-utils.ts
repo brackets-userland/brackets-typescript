@@ -1,3 +1,6 @@
+import * as _ from 'lodash';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as ts from 'typescript';
 import * as TSLint from 'tslint';
 import { IConfigurationFile } from 'tslint/lib/configuration';
@@ -12,6 +15,7 @@ export interface TypeScriptProject {
 }
 
 const projects: { [projectRoot: string]: TypeScriptProject } = {};
+const tsconfigDirMap: { [directoryPath: string]: boolean } = {};
 
 function getTsLintConfig(projectRoot: string): IConfigurationFile {
   const tsLintConfigPath = TSLint.findConfigurationPath(null, projectRoot);
@@ -23,8 +27,40 @@ function parseConfigFile(projectRoot: string): ts.ParsedCommandLine {
   return ts.parseJsonConfigFileContent(config, ts.sys, projectRoot);
 }
 
-export function getTypeScriptProject(projectRoot): TypeScriptProject {
+// TODO: tsconfigDirMap needs to clean when directory is modified
+function hasTsconfigFile(directoryPath: string): boolean {
+  if (directoryPath in tsconfigDirMap) {
+    return tsconfigDirMap[directoryPath];
+  }
+  try {
+    tsconfigDirMap[directoryPath] = fs.statSync(combinePaths(directoryPath, 'tsconfig.json')).isFile();
+  } catch (err) {
+    tsconfigDirMap[directoryPath] = false;
+  }
+  return tsconfigDirMap[directoryPath];
+}
+
+function dirsBetween(rootPath: string, filePath: string): string[] {
+  const dirs = [];
+  if (filePath.indexOf(rootPath) !== 0 || filePath === rootPath) {
+    return dirs;
+  }
+  while (filePath.length > rootPath.length) {
+    filePath = path.dirname(filePath);
+    dirs.push(filePath);
+  }
+  return dirs;
+}
+
+export function getTypeScriptProject(projectRoot: string, filePath?: string): TypeScriptProject {
   projectRoot = normalizePath(projectRoot);
+
+  if (filePath) {
+    const newRoot = _.find(dirsBetween(projectRoot, normalizePath(filePath)), dir => hasTsconfigFile(dir));
+    if (newRoot) {
+      projectRoot = newRoot;
+    }
+  }
 
   if (projects[projectRoot]) {
     return projects[projectRoot];
@@ -63,37 +99,51 @@ export function onProjectRefresh(projectRoot: string): void {
 }
 
 export function onProjectClose(projectRoot: string): void {
-  projectRoot = normalizePath(projectRoot);
-  delete projects[projectRoot];
+  Object.keys(projects).forEach(path => {
+    delete projects[path];
+  });
 }
 
 export function onFileChange(notification: FileChangeNotification): void {
   notification.fullPath = normalizePath(notification.fullPath);
+
+  // if it's tsconfig.json, refresh its project
+  if (/\/tsconfig\.json$/i.test(notification.fullPath)) {
+    const parentDir = normalizePath(path.dirname(notification.fullPath));
+    onProjectRefresh(parentDir);
+    return;
+  }
+
+  // if it's tslint.json, update tsLintConfig of the project
+  // TODO: and all of the projects under it, because they inherit configuration
+  if (/\/tslint\.json$/i.test(notification.fullPath)) {
+    const parentDir = normalizePath(path.dirname(notification.fullPath));
+    onProjectRefresh(parentDir);
+    return;
+  }
+
   Object.keys(projects).forEach(projectRoot => {
+
+    const isInProject = notification.fullPath.indexOf(projectRoot) === 0;
+    if (!isInProject) {
+      return;
+    }
 
     const project = projects[projectRoot];
 
-    const isInProject = notification.fullPath.indexOf(projectRoot) === 0;
-    if (isInProject) {
-      const relativePath = '/' + notification.fullPath.substring(projectRoot.length);
-      if (relativePath === '/tsconfig.json') {
-        onProjectRefresh(projectRoot);
-        return;
-      } else if (relativePath === '/tslint.json') {
-        project.tsLintConfig = getTsLintConfig(projectRoot);
-        return;
-      }
-    }
-
+    // if it's a file in the projectRoot
     if (notification.isFile) {
       const processed = project.languageServiceHost._wasFileModified(notification.fullPath);
       if (!processed) {
         // maybe a new file, which should be included in the project
-        onProjectRefresh(projectRoot);
-        return;
+        if (/\.tsx?$/i.test(notification.fullPath)) {
+          onProjectRefresh(projectRoot);
+          return;
+        }
       }
     }
 
+    // if it's a directory in the projectRoot
     if (notification.isDirectory) {
       project.languageServiceHost._wasDirectoryModified(notification.fullPath);
     }

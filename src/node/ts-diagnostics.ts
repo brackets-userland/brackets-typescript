@@ -29,7 +29,7 @@ export function getDiagnostics(
 ): void {
   try {
 
-    const project: TypeScriptProject = getTypeScriptProject(projectRoot);
+    const project: TypeScriptProject = getTypeScriptProject(projectRoot, filePath);
 
     // make sure project is compilable
     if (project.generalDiagnostics.length > 0) {
