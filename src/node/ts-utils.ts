@@ -27,7 +27,6 @@ function parseConfigFile(projectRoot: string): ts.ParsedCommandLine {
   return ts.parseJsonConfigFileContent(config, ts.sys, projectRoot);
 }
 
-// TODO: tsconfigDirMap needs to clean when directory is modified
 function hasTsconfigFile(directoryPath: string): boolean {
   if (directoryPath in tsconfigDirMap) {
     return tsconfigDirMap[directoryPath];
@@ -102,6 +101,9 @@ export function onProjectClose(projectRoot: string): void {
   Object.keys(projects).forEach(path => {
     delete projects[path];
   });
+  Object.keys(tsconfigDirMap).forEach(path => {
+    delete tsconfigDirMap[path];
+  });
 }
 
 export function onFileChange(notification: FileChangeNotification): void {
@@ -124,6 +126,15 @@ export function onFileChange(notification: FileChangeNotification): void {
       }
     });
     return;
+  }
+
+  // if it's a directory, clear the config file maps under it
+  if (notification.isDirectory) {
+    Object.keys(tsconfigDirMap).forEach(dirPath => {
+      if (dirPath.indexOf(notification.fullPath) === 0) {
+        delete tsconfigDirMap[dirPath];
+      }
+    });
   }
 
   Object.keys(projects).forEach(projectRoot => {
