@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ts from 'typescript';
+import * as TSType from 'typescript';
 import * as TSLintType from 'tslint';
 import { IConfigurationFile } from 'tslint/lib/configuration';
 import { TypeScriptLanguageServiceHost } from './language-service-host';
@@ -10,8 +10,8 @@ import { getProjectPackage } from './package-resolver';
 
 export interface TypeScriptProject {
   languageServiceHost: TypeScriptLanguageServiceHost;
-  languageService: ts.LanguageService;
-  generalDiagnostics: ts.Diagnostic[];
+  languageService: TSType.LanguageService;
+  generalDiagnostics: TSType.Diagnostic[];
   TsLint?: typeof TSLintType;
   tsLintConfig?: any;
 }
@@ -24,7 +24,7 @@ function getTsLintConfig(TSLint: typeof TSLintType, projectRoot: string): IConfi
   return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
 
-function parseConfigFile(projectRoot: string): ts.ParsedCommandLine {
+function parseConfigFile(projectRoot: string): TSType.ParsedCommandLine {
   const config = ts.readConfigFile(combinePaths(projectRoot, 'tsconfig.json'), ts.sys.readFile).config;
   return ts.parseJsonConfigFileContent(config, ts.sys, projectRoot);
 }
@@ -68,7 +68,7 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
   }
 
   const parsed = parseConfigFile(projectRoot);
-  const options: ts.CompilerOptions = parsed.options;
+  const options: TSType.CompilerOptions = parsed.options;
   const fileNames: string[] = parsed.fileNames;
   const languageServiceHost = new TypeScriptLanguageServiceHost(projectRoot, options, fileNames);
   const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());

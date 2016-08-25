@@ -1,18 +1,18 @@
 import * as _ from 'lodash';
 import * as log from './log';
-import * as ts from 'typescript';
+import * as TSType from 'typescript';
 import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 
 const fuzzaldrin: { filter: (list: any[], prefix: string, property?: { key: string }) => any } = require('fuzzaldrin');
 
-function createReportFromCompletionInfo(completionInfo: ts.CompletionInfo, prefix: string): CodeHintsReport {
-  let entries: ts.CompletionEntry[] = completionInfo ? completionInfo.entries : [];
+function createReportFromCompletionInfo(completionInfo: TSType.CompletionInfo, prefix: string): CodeHintsReport {
+  let entries: TSType.CompletionEntry[] = completionInfo ? completionInfo.entries : [];
 
   if (prefix) {
     entries = fuzzaldrin.filter(entries, prefix, { key: 'name' });
   }
 
-  entries = _.sortBy(entries, (entry: ts.CompletionEntry) => {
+  entries = _.sortBy(entries, (entry: TSType.CompletionEntry) => {
     let sort = entry.sortText;
     if (prefix) {
       if (entry.name.indexOf(prefix) === 0) {

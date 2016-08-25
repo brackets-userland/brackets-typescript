@@ -1,11 +1,11 @@
 import * as log from './log';
-import * as ts from 'typescript';
+import * as TSType from 'typescript';
 import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 import { executeTsLint } from './tslint-utils';
 
-export function createReportFromDiagnostics(diagnostics: ts.Diagnostic[]): CodeInspectionReport {
+export function createReportFromDiagnostics(diagnostics: TSType.Diagnostic[]): CodeInspectionReport {
   return {
-    errors: diagnostics.map((diagnostic: ts.Diagnostic) => {
+    errors: diagnostics.map((diagnostic: TSType.Diagnostic) => {
       let line = 0;
       let ch = 0;
       if (diagnostic.file) {
@@ -40,7 +40,7 @@ export function getDiagnostics(
     project.languageServiceHost._addFile(filePath, fileContent);
 
     // get the program from languageService (we can't keep program in memory)
-    const program: ts.Program = project.languageService.getProgram();
+    const program: TSType.Program = project.languageService.getProgram();
 
     // run TypeScript file diagnostics
     const sourceFile = program.getSourceFile(filePath);

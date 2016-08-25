@@ -3,21 +3,21 @@ import { combinePaths, normalizePath } from './ts-path-utils';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ts from 'typescript';
+import * as TSType from 'typescript';
 
 const typescriptPath = normalizePath(path.dirname(require.resolve('typescript')));
 
 export interface ScriptInfo {
   version: string;
-  snapshot: ts.IScriptSnapshot;
+  snapshot: TSType.IScriptSnapshot;
 }
 
-export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
+export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost {
 
   private files: { [fileName: string]: ScriptInfo } = {};
   private directories: { [directoryName: string]: string[] } = {};
 
-  constructor (private projectDirectory: string, private compilationSettings: ts.CompilerOptions, fileNames: string[]) {
+  constructor (private projectDirectory: string, private compilationSettings: TSType.CompilerOptions, fileNames: string[]) {
     fileNames.forEach(fileName => {
       this.getScriptSnapshot(fileName);
     });
@@ -79,11 +79,11 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     });
   }
 
-  _updateCompilationSettings(options: ts.CompilerOptions): void {
+  _updateCompilationSettings(options: TSType.CompilerOptions): void {
     this.compilationSettings = options;
   }
 
-  getCompilationSettings(): ts.CompilerOptions {
+  getCompilationSettings(): TSType.CompilerOptions {
     return this.compilationSettings;
   }
 
@@ -98,7 +98,7 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return Object.keys(this.files).filter(file => /\.tsx?$/.test(file));
   }
 
-  getScriptKind(fileName: string): ts.ScriptKind {
+  getScriptKind(fileName: string): TSType.ScriptKind {
     const ext = fileName.substr(fileName.lastIndexOf('.'));
     switch (ext.toLowerCase()) {
       case '.js':
@@ -122,7 +122,7 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return scriptInfo ? scriptInfo.version : '';
   }
 
-  getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined {
+  getScriptSnapshot(fileName: string): TSType.IScriptSnapshot | undefined {
     if (this.files[fileName]) {
       return this.files[fileName].snapshot;
     }
@@ -138,7 +138,7 @@ export class TypeScriptLanguageServiceHost implements ts.LanguageServiceHost {
     return this.projectDirectory;
   }
 
-  getDefaultLibFileName(options: ts.CompilerOptions): string {
+  getDefaultLibFileName(options: TSType.CompilerOptions): string {
     return combinePaths(typescriptPath, ts.getDefaultLibFileName(options));
   }
 
