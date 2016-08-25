@@ -55,7 +55,7 @@ export function getDiagnostics(
 
     // if config for TSLint is present in the project, run TSLint checking
     if (project.tsLintConfig) {
-      const errors = executeTsLint(filePath, fileContent, project.tsLintConfig, program);
+      const errors = executeTsLint(filePath, fileContent, project.TsLint, project.tsLintConfig, program);
       if (errors.length > 0) {
         return callback(null, { errors });
       }

@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import * as TSLint from 'tslint';
+import * as TSLintType from 'tslint';
 import { ILinterOptionsRaw, LintResult } from 'tslint/lib/lint';
 
 export function mapLintResultFailures(failures): Array<CodeInspectionError> {
@@ -15,7 +15,13 @@ export function mapLintResultFailures(failures): Array<CodeInspectionError> {
   });
 }
 
-export function executeTsLint(fullPath, code, tsLintConfig, program): Array<CodeInspectionError> {
+export function executeTsLint(
+  fullPath: string,
+  code: string,
+  TSLint: typeof TSLintType,
+  tsLintConfig,
+  program
+): Array<CodeInspectionError> {
   try {
     const options: ILinterOptionsRaw = {
       configuration: tsLintConfig

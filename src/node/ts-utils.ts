@@ -2,22 +2,24 @@ import * as _ from 'lodash';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
-import * as TSLint from 'tslint';
+import * as TSLintType from 'tslint';
 import { IConfigurationFile } from 'tslint/lib/configuration';
 import { TypeScriptLanguageServiceHost } from './language-service-host';
 import { combinePaths, normalizePath } from './ts-path-utils';
+import { getProjectPackage } from './package-resolver';
 
 export interface TypeScriptProject {
   languageServiceHost: TypeScriptLanguageServiceHost;
   languageService: ts.LanguageService;
   generalDiagnostics: ts.Diagnostic[];
+  TsLint?: typeof TSLintType;
   tsLintConfig?: any;
 }
 
 const projects: { [projectRoot: string]: TypeScriptProject } = {};
 const tsconfigDirMap: { [directoryPath: string]: boolean } = {};
 
-function getTsLintConfig(projectRoot: string): IConfigurationFile {
+function getTsLintConfig(TSLint: typeof TSLintType, projectRoot: string): IConfigurationFile {
   const tsLintConfigPath = TSLint.findConfigurationPath(null, projectRoot);
   return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
@@ -78,11 +80,15 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
     program.getOptionsDiagnostics()
   );
 
+  // we need to load TSLint that's local to the project root
+  const TsLint = getProjectPackage(projectRoot, 'tslint');
+
   projects[projectRoot] = {
     languageServiceHost,
     languageService,
     generalDiagnostics,
-    tsLintConfig: getTsLintConfig(projectRoot)
+    TsLint,
+    tsLintConfig: getTsLintConfig(TsLint, projectRoot)
   };
 
   return projects[projectRoot];
