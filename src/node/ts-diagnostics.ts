@@ -3,7 +3,7 @@ import * as TSType from 'typescript';
 import { getTypeScriptProject, TypeScriptProject } from './ts-utils';
 import { executeTsLint } from './tslint-utils';
 
-export function createReportFromDiagnostics(diagnostics: TSType.Diagnostic[]): CodeInspectionReport {
+export function createReportFromDiagnostics(ts: typeof TSType, diagnostics: TSType.Diagnostic[]): CodeInspectionReport {
   return {
     errors: diagnostics.map((diagnostic: TSType.Diagnostic) => {
       let line = 0;
@@ -33,7 +33,7 @@ export function getDiagnostics(
 
     // make sure project is compilable
     if (project.generalDiagnostics.length > 0) {
-      return callback(null, createReportFromDiagnostics(project.generalDiagnostics));
+      return callback(null, createReportFromDiagnostics(project.ts, project.generalDiagnostics));
     }
 
     // refresh the file in the service host
@@ -50,7 +50,7 @@ export function getDiagnostics(
       program.getSyntacticDiagnostics(sourceFile)
     );
     if (fileDiagnostics.length > 0) {
-      return callback(null, createReportFromDiagnostics(fileDiagnostics));
+      return callback(null, createReportFromDiagnostics(project.ts, fileDiagnostics));
     }
 
     // if config for TSLint is present in the project, run TSLint checking

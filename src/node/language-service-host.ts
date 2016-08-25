@@ -17,7 +17,12 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
   private files: { [fileName: string]: ScriptInfo } = {};
   private directories: { [directoryName: string]: string[] } = {};
 
-  constructor (private projectDirectory: string, private compilationSettings: TSType.CompilerOptions, fileNames: string[]) {
+  constructor (
+    private ts: typeof TSType,
+    private projectDirectory: string,
+    private compilationSettings: TSType.CompilerOptions,
+    fileNames: string[]
+  ) {
     fileNames.forEach(fileName => {
       this.getScriptSnapshot(fileName);
     });
@@ -27,7 +32,7 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
     if (typeof text !== 'string' || text.length === 0) {
       return this._readFile(fileName);
     }
-    const snapshot = ts.ScriptSnapshot.fromString(text);
+    const snapshot = this.ts.ScriptSnapshot.fromString(text);
     const version = this._getFileHash(text);
     this.files[fileName] = { version, snapshot };
     return this.files[fileName];
@@ -102,15 +107,15 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
     const ext = fileName.substr(fileName.lastIndexOf('.'));
     switch (ext.toLowerCase()) {
       case '.js':
-          return ts.ScriptKind.JS;
+          return this.ts.ScriptKind.JS;
       case '.jsx':
-          return ts.ScriptKind.JSX;
+          return this.ts.ScriptKind.JSX;
       case '.ts':
-          return ts.ScriptKind.TS;
+          return this.ts.ScriptKind.TS;
       case '.tsx':
-          return ts.ScriptKind.TSX;
+          return this.ts.ScriptKind.TSX;
       default:
-          return ts.ScriptKind.Unknown;
+          return this.ts.ScriptKind.Unknown;
     }
   }
 
@@ -139,7 +144,7 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
   }
 
   getDefaultLibFileName(options: TSType.CompilerOptions): string {
-    return combinePaths(typescriptPath, ts.getDefaultLibFileName(options));
+    return combinePaths(typescriptPath, this.ts.getDefaultLibFileName(options));
   }
 
   // log(s: string): void {

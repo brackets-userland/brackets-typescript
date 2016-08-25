@@ -9,6 +9,7 @@ import { combinePaths, normalizePath } from './ts-path-utils';
 import { getProjectPackage } from './package-resolver';
 
 export interface TypeScriptProject {
+  ts: typeof TSType;
   languageServiceHost: TypeScriptLanguageServiceHost;
   languageService: TSType.LanguageService;
   generalDiagnostics: TSType.Diagnostic[];
@@ -24,7 +25,7 @@ function getTsLintConfig(TSLint: typeof TSLintType, projectRoot: string): IConfi
   return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
 
-function parseConfigFile(projectRoot: string): TSType.ParsedCommandLine {
+function parseConfigFile(ts: typeof TSType, projectRoot: string): TSType.ParsedCommandLine {
   const config = ts.readConfigFile(combinePaths(projectRoot, 'tsconfig.json'), ts.sys.readFile).config;
   return ts.parseJsonConfigFileContent(config, ts.sys, projectRoot);
 }
@@ -67,10 +68,11 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
     return projects[projectRoot];
   }
 
-  const parsed = parseConfigFile(projectRoot);
+  const ts = getProjectPackage(projectRoot, 'typescript');
+  const parsed = parseConfigFile(ts, projectRoot);
   const options: TSType.CompilerOptions = parsed.options;
   const fileNames: string[] = parsed.fileNames;
-  const languageServiceHost = new TypeScriptLanguageServiceHost(projectRoot, options, fileNames);
+  const languageServiceHost = new TypeScriptLanguageServiceHost(ts, projectRoot, options, fileNames);
   const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
   // we only need to run this when project configuration changes
@@ -84,6 +86,7 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
   const TsLint = getProjectPackage(projectRoot, 'tslint');
 
   projects[projectRoot] = {
+    ts,
     languageServiceHost,
     languageService,
     generalDiagnostics,
