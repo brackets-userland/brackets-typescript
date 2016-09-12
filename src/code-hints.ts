@@ -41,12 +41,8 @@ define(function (require, exports, module) {
     let wordBeforeCursor = lineBeforeCursor.match(/[\$_a-zA-Z0-9]+$/);
     wordBeforeCursor = wordBeforeCursor ? wordBeforeCursor[0] : '';
 
-    const lineAfterCursor = line.slice(cursorPos.ch);
-    let wordAfterCursor = lineAfterCursor.match(/^[\$_a-zA-Z0-9]+/);
-    wordAfterCursor = wordAfterCursor ? wordAfterCursor[0] : '';
-
     const start = { line: cursorPos.line, ch: cursorPos.ch - wordBeforeCursor.length };
-    const end = { line: cursorPos.line, ch: cursorPos.ch + wordAfterCursor.length };
+    const end = { line: cursorPos.line, ch: cursorPos.ch };
     this.editor.document.replaceRange(hint, start, end);
   };
 
