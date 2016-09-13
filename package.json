@@ -1,6 +1,6 @@
 {
   "name": "brackets-typescript",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "title": "TypeScript",
   "description": "Adds TypeScript support to Brackets",
   "keywords": [
@@ -22,22 +22,22 @@
   "scripts": {
     "dev": "tsc --watch",
     "test": "npm run prepublish",
-    "prepublish": "npm run build && npm run lint",
+    "prepublish": "npm prune && npm update && npm run build && npm run lint",
     "build": "rimraf ./dist && tsc",
     "lint": "tslint -c tslint.json --project tsconfig.json"
   },
   "dependencies": {
-    "@types/jquery": "^1.10.31",
-    "@types/lodash": "^4.14.34",
-    "@types/node": "^6.0.38",
-    "brackets-inspection-gutters": "^0.2.5",
-    "fuzzaldrin": "^2.1.0",
-    "lodash": "^4.14.2",
-    "tslint": "^3.15.1",
-    "typescript": "^2.0.2"
+    "@types/jquery": "1.10.31",
+    "@types/lodash": "4.14.34",
+    "@types/node": "6.0.38",
+    "brackets-inspection-gutters": "0.2.5",
+    "fuzzaldrin": "2.1.0",
+    "lodash": "4.14.2",
+    "tslint": "3.15.1",
+    "typescript": "2.0.2"
   },
   "devDependencies": {
-    "rimraf": "^2.5.4"
+    "rimraf": "2.5.4"
   },
   "engines": {
     "brackets": ">=1.7.0"

@@ -14,7 +14,7 @@ define((require, exports, module) => {
     }
   }
 
-  module.exports = function () {
+  module.exports = () => {
     defineLanguage('typescript', 'TypeScript', 'ts');
     defineLanguage('tsx', 'TypeScript', 'tsx');
   };

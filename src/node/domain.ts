@@ -10,7 +10,7 @@ const EXTENSION_UNIQUE_NAME = 'zaggino.' + EXTENSION_NAME;
 const domainName = EXTENSION_UNIQUE_NAME;
 let domainManager = null;
 
-exports.init = function (_domainManager) {
+exports.init = (_domainManager) => {
   domainManager = _domainManager;
 
   if (!domainManager.hasDomain(domainName)) {

@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module) => {
   'use strict';
 
   const FileSystem = brackets.getModule('filesystem/FileSystem');
@@ -24,7 +24,7 @@ define(function (require, exports, module) {
     nodeDomain.exec('projectClose', projectRoot.fullPath);
   }
 
-  module.exports = function () {
+  module.exports = () => {
     FileSystem.on('change', handleFileSystemChange);
     ProjectManager.on('projectOpen', handleProjectOpen);
     ProjectManager.on('projectRefresh', handleProjectOpen);
