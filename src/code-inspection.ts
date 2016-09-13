@@ -1,4 +1,4 @@
-import { CodeInspectionReport } from '../node_modules/brackets-inspection-gutters/src/main.d.ts';
+import { CodeInspectionReport } from './types';
 
 define(function (require, exports, module) {
 
