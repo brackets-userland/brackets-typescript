@@ -1,6 +1,6 @@
 {
   "name": "brackets-typescript",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "title": "TypeScript",
   "description": "Adds TypeScript support to Brackets",
   "keywords": [
@@ -21,8 +21,10 @@
   },
   "scripts": {
     "dev": "tsc --watch",
-    "test": "tsc && tslint -c tslint.json --project tsconfig.json",
-    "prepublish": "rimraf dist && tsc"
+    "test": "npm run prepublish",
+    "prepublish": "npm run build && npm run lint",
+    "build": "rimraf ./dist && tsc",
+    "lint": "tslint -c tslint.json --project tsconfig.json"
   },
   "dependencies": {
     "@types/jquery": "^1.10.31",
