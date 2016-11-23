@@ -23,7 +23,7 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
     private compilationSettings: TSType.CompilerOptions,
     fileNames: string[]
   ) {
-    fileNames.forEach(fileName => {
+    fileNames.forEach((fileName) => {
       this.getScriptSnapshot(fileName);
     });
   }
@@ -71,13 +71,13 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
   }
 
   _wasDirectoryModified(directoryName: string): void {
-    Object.keys(this.files).forEach(_fileName => {
+    Object.keys(this.files).forEach((_fileName) => {
       if (_fileName.indexOf(directoryName) === 0) {
         // reload file from fs
         this._readFile(_fileName);
       }
     });
-    Object.keys(this.directories).forEach(_directoryName => {
+    Object.keys(this.directories).forEach((_directoryName) => {
       if (_directoryName.indexOf(directoryName) === 0) {
         this._clearDirectory(_directoryName);
       }
@@ -100,7 +100,7 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
 
   // NOTE: this can only return '.ts', '.tsx' and '.d.ts' files
   getScriptFileNames(): string[] {
-    return Object.keys(this.files).filter(file => /\.tsx?$/.test(file));
+    return Object.keys(this.files).filter((file) => /\.tsx?$/.test(file));
   }
 
   getScriptKind(fileName: string): TSType.ScriptKind {

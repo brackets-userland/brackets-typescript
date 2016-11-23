@@ -35,7 +35,7 @@ function createReportFromCompletionInfo(completionInfo: TSType.CompletionInfo, p
   }
 
   return {
-    hints: entries.map(entry => entry.name),
+    hints: entries.map((entry) => entry.name),
     match: prefix,
     selectInitial: true,
     handleWideResults: false

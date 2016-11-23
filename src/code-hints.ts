@@ -53,7 +53,7 @@ define((require, exports, module) => {
     const langIds = ['ts', 'tsx'].map((extension) => {
       const language = LanguageManager.getLanguageForExtension(extension);
       return language ? language.getId() : null;
-    }).filter(x => x != null);
+    }).filter((x) => x != null);
     CodeHintManager.registerHintProvider(new TypeScriptHintProvider(), langIds, 0);
   };
 

@@ -14,15 +14,26 @@ export interface TypeScriptProject {
   languageService: TSType.LanguageService;
   generalDiagnostics: TSType.Diagnostic[];
   TsLint?: typeof TSLintType;
-  tsLintConfig?: any;
+  tsLintConfig?: IConfigurationFile;
+  tsLintVersion?: string;
 }
 
 const projects: { [projectRoot: string]: TypeScriptProject } = {};
 const tsconfigDirMap: { [directoryPath: string]: boolean } = {};
 
-function getTsLintConfig(TSLint: typeof TSLintType, projectRoot: string): IConfigurationFile {
-  const tsLintConfigPath = TSLint.findConfigurationPath(null, projectRoot);
-  return tsLintConfigPath ? TSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
+function getTsLintConfig(
+  TSLint: typeof TSLintType,
+  tsLintVersion: string,
+  projectRoot: string
+): IConfigurationFile {
+  const versionMajor = parseInt(tsLintVersion, 10);
+  if (versionMajor <= 3) {
+    const oldTSLint = TSLint as any;
+    const tsLintConfigPath = oldTSLint.findConfigurationPath(null, projectRoot);
+    return tsLintConfigPath ? oldTSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
+  }
+  const tsLintConfigPath = TSLint.Linter.findConfigurationPath(null, projectRoot);
+  return tsLintConfigPath ? TSLint.Linter.loadConfigurationFromPath(tsLintConfigPath) : null;
 }
 
 function parseConfigFile(ts: typeof TSType, projectRoot: string): TSType.ParsedCommandLine {
@@ -58,7 +69,7 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
   projectRoot = normalizePath(projectRoot);
 
   if (filePath) {
-    const newRoot = _.find(dirsBetween(projectRoot, normalizePath(filePath)), dir => hasTsconfigFile(dir));
+    const newRoot = _.find(dirsBetween(projectRoot, normalizePath(filePath)), (dir) => hasTsconfigFile(dir));
     if (newRoot) {
       projectRoot = newRoot;
     }
@@ -84,6 +95,7 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
 
   // we need to load TSLint that's local to the project root
   const TsLint = getProjectPackage(projectRoot, 'tslint');
+  const TsLintPackageJson = getProjectPackage(projectRoot, 'tslint/package.json');
 
   projects[projectRoot] = {
     ts,
@@ -91,7 +103,8 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
     languageService,
     generalDiagnostics,
     TsLint,
-    tsLintConfig: getTsLintConfig(TsLint, projectRoot)
+    tsLintVersion: TsLintPackageJson.version,
+    tsLintConfig: getTsLintConfig(TsLint, TsLintPackageJson.version, projectRoot)
   };
 
   return projects[projectRoot];
@@ -107,10 +120,10 @@ export function onProjectRefresh(projectRoot: string): void {
 }
 
 export function onProjectClose(projectRoot: string): void {
-  Object.keys(projects).forEach(path => {
+  Object.keys(projects).forEach((path) => {
     delete projects[path];
   });
-  Object.keys(tsconfigDirMap).forEach(path => {
+  Object.keys(tsconfigDirMap).forEach((path) => {
     delete tsconfigDirMap[path];
   });
 }
@@ -129,7 +142,7 @@ export function onFileChange(notification: FileChangeNotification): void {
   // and all of the projects under it, because they inherit configuration
   if (/\/tslint\.json$/i.test(notification.fullPath)) {
     const parentDir = normalizePath(path.dirname(notification.fullPath));
-    Object.keys(projects).forEach(projectRoot => {
+    Object.keys(projects).forEach((projectRoot) => {
       if (projectRoot.indexOf(parentDir) === 0) {
         onProjectRefresh(projectRoot);
       }
@@ -139,14 +152,14 @@ export function onFileChange(notification: FileChangeNotification): void {
 
   // if it's a directory, clear the config file maps under it
   if (notification.isDirectory) {
-    Object.keys(tsconfigDirMap).forEach(dirPath => {
+    Object.keys(tsconfigDirMap).forEach((dirPath) => {
       if (dirPath.indexOf(notification.fullPath) === 0) {
         delete tsconfigDirMap[dirPath];
       }
     });
   }
 
-  Object.keys(projects).forEach(projectRoot => {
+  Object.keys(projects).forEach((projectRoot) => {
 
     const isInProject = notification.fullPath.indexOf(projectRoot) === 0;
     if (!isInProject) {
