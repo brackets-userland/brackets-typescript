@@ -28,13 +28,13 @@
   },
   "dependencies": {
     "@types/jquery": "2.0.34",
-    "@types/lodash": "4.14.40",
-    "@types/node": "6.0.50",
+    "@types/lodash": "4.14.43",
+    "@types/node": "0.0.3",
     "brackets-inspection-gutters": "0.2.7",
     "fuzzaldrin": "2.1.0",
     "lodash": "4.17.2",
-    "tslint": "4.0.1",
-    "typescript": "2.0.10"
+    "tslint": "4.0.2",
+    "typescript": "2.1.4"
   },
   "devDependencies": {
     "rimraf": "2.5.4"
