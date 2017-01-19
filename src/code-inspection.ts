@@ -23,7 +23,7 @@ define((require, exports, module) => {
       .then((report: CodeInspectionReport) => {
 
         // set gutter marks using brackets-inspection-gutters module
-        const w = (<any> window);
+        const w = window as any;
         if (w.bracketsInspectionGutters) {
           w.bracketsInspectionGutters.set(
             EXTENSION_UNIQUE_NAME, fullPath, report, true

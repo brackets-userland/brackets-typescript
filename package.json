@@ -1,6 +1,6 @@
 {
   "name": "brackets-typescript",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "title": "TypeScript",
   "description": "Adds TypeScript support to Brackets",
   "keywords": [
@@ -30,7 +30,7 @@
     "@types/jquery": "^2.0.34",
     "@types/lodash": "^4.14.43",
     "@types/node": "^6.0.52",
-    "brackets-inspection-gutters": "^0.2.8",
+    "brackets-inspection-gutters": "^0.2.9",
     "fuzzaldrin": "^2.1.0",
     "lodash": "^4.17.2",
     "tslint": "^4.0.2",
