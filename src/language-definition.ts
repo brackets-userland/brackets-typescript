@@ -28,8 +28,8 @@ define((require, exports, module) => {
     });
     defineLanguage({
       id: 'tsx',
-      name: 'TypeScript',
-      mode: ['javascript', 'text/typescript'],
+      name: 'TypeScript-JSX',
+      mode: ['jsx', 'text/typescript-jsx'],
       extension: 'tsx'
     });
   };
