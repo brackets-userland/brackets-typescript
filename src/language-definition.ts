@@ -2,11 +2,16 @@ define((require, exports, module) => {
 
   const LanguageManager = brackets.getModule('language/LanguageManager');
 
-  function defineLanguage(languageId, languageName, extension) {
+  function defineLanguage({ id, name, mode, extension }: {
+    id: string;
+    name: string;
+    mode: [string, string];
+    extension: string;
+  }) {
     if (!LanguageManager.getLanguageForExtension(extension)) {
-      LanguageManager.defineLanguage(languageId, {
-        name: languageName,
-        mode: ['javascript', 'text/typescript'],
+      LanguageManager.defineLanguage(id, {
+        name,
+        mode,
         fileExtensions: [extension],
         blockComment: ['/*', '*/'],
         lineComment: ['//']
@@ -15,8 +20,18 @@ define((require, exports, module) => {
   }
 
   module.exports = () => {
-    defineLanguage('typescript', 'TypeScript', 'ts');
-    defineLanguage('tsx', 'TypeScript', 'tsx');
+    defineLanguage({
+      id: 'typescript',
+      name: 'TypeScript',
+      mode: ['javascript', 'text/typescript'],
+      extension: 'ts'
+    });
+    defineLanguage({
+      id: 'tsx',
+      name: 'TypeScript',
+      mode: ['javascript', 'text/typescript'],
+      extension: 'tsx'
+    });
   };
 
 });
