@@ -41,8 +41,5 @@
   },
   "devDependencies": {
     "rimraf": "2.6.1"
-  },
-  "engines": {
-    "brackets": ">=1.7.0"
   }
 }
