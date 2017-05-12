@@ -5,8 +5,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as TSType from 'typescript';
 
-const typescriptPath = normalizePath(path.dirname(require.resolve('typescript')));
-
 export interface ScriptInfo {
   version: string;
   snapshot: TSType.IScriptSnapshot;
@@ -19,6 +17,7 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
 
   constructor (
     private ts: typeof TSType,
+    private tsPath: string, // require.resolve('typescript')
     private projectDirectory: string,
     private compilationSettings: TSType.CompilerOptions,
     fileNames: string[]
@@ -144,6 +143,7 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
   }
 
   getDefaultLibFileName(options: TSType.CompilerOptions): string {
+    const typescriptPath = normalizePath(path.dirname(this.tsPath));
     return combinePaths(typescriptPath, this.ts.getDefaultLibFileName(options));
   }
 

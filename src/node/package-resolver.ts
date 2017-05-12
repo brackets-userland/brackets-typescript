@@ -1,17 +1,25 @@
 import * as path from 'path';
 import { normalizePath } from './ts-path-utils';
 
-function tryLoad(packagePath: string): any {
+export interface PackageResult {
+  package: any;
+  packagePath: string;
+}
+
+function tryLoad(pPath: string): PackageResult | null {
   let result;
   try {
-    result = require(packagePath);
+    result = {
+      package: require(pPath),
+      packagePath: require.resolve(pPath)
+    };
   } catch (err) {
     result = null;
   }
   return result;
 }
 
-export function getProjectPackage(projectRoot: string, packageName: string): any {
+export function getProjectPackage(projectRoot: string, packageName: string): PackageResult {
 
   while (true) {
     // try to load the package
@@ -27,5 +35,8 @@ export function getProjectPackage(projectRoot: string, packageName: string): any
   }
 
   // fallback to one installed in here
-  return require(packageName);
+  return {
+    package: require(packageName),
+    packagePath: require.resolve(packageName)
+  };
 }

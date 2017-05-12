@@ -79,11 +79,11 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
     return projects[projectRoot];
   }
 
-  const ts = getProjectPackage(projectRoot, 'typescript');
+  const { package: ts, packagePath: tsPath } = getProjectPackage(projectRoot, 'typescript');
   const parsed = parseConfigFile(ts, projectRoot);
   const options: TSType.CompilerOptions = parsed.options;
   const fileNames: string[] = parsed.fileNames;
-  const languageServiceHost = new TypeScriptLanguageServiceHost(ts, projectRoot, options, fileNames);
+  const languageServiceHost = new TypeScriptLanguageServiceHost(ts, tsPath, projectRoot, options, fileNames);
   const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry());
 
   // we only need to run this when project configuration changes
@@ -94,8 +94,8 @@ export function getTypeScriptProject(projectRoot: string, filePath?: string): Ty
   );
 
   // we need to load TSLint that's local to the project root
-  const TsLint = getProjectPackage(projectRoot, 'tslint');
-  const TsLintPackageJson = getProjectPackage(projectRoot, 'tslint/package.json');
+  const { package: TsLint } = getProjectPackage(projectRoot, 'tslint');
+  const { package: TsLintPackageJson } = getProjectPackage(projectRoot, 'tslint/package.json');
 
   projects[projectRoot] = {
     ts,
