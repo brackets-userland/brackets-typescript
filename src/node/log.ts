@@ -9,12 +9,12 @@ function doLog(level: string, msgs: string[]): void {
 
 export function info(...messages: string[]): void {
   doLog('log', messages);
-};
+}
 
 export function warn(...messages: string[]): void {
   doLog('warn', messages);
-};
+}
 
 export function error(...messages: string[]): void {
   doLog('error', messages);
-};
+}

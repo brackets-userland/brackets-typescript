@@ -65,4 +65,4 @@ export function getCompletions(
     log.error(err.stack);
     return callback(err);
   }
-};
+}

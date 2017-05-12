@@ -186,4 +186,4 @@ export function onFileChange(notification: FileChangeNotification): void {
     }
 
   });
-};
+}

@@ -74,4 +74,4 @@ export function getDiagnostics(
     log.error(err.stack);
     return callback(err);
   }
-};
+}
