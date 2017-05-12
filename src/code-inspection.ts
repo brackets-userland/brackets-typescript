@@ -1,5 +1,3 @@
-import { CodeInspectionReport } from './types';
-
 define((require, exports, module) => {
 
   const CodeInspection = brackets.getModule('language/CodeInspection');
