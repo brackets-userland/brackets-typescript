@@ -30,14 +30,14 @@
     "lint": "tslint -c tslint.json --project tsconfig.json"
   },
   "dependencies": {
-    "@types/jquery": "2.0.43",
-    "@types/lodash": "4.14.64",
-    "@types/node": "7.0.18",
+    "@types/jquery": "3.2.9",
+    "@types/lodash": "4.14.71",
+    "@types/node": "8.0.17",
     "brackets-inspection-gutters": "0.2.10",
     "fuzzaldrin": "2.1.0",
     "lodash": "4.17.4",
-    "tslint": "5.2.0",
-    "typescript": "2.3.2"
+    "tslint": "5.5.0",
+    "typescript": "2.4.2"
   },
   "devDependencies": {
     "rimraf": "2.6.1"
