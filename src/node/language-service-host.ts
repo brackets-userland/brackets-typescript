@@ -196,4 +196,28 @@ export class TypeScriptLanguageServiceHost implements TSType.LanguageServiceHost
     }, []);
   }
 
+  /*
+   * LS host can optionally implement these methods to support completions for module specifiers.
+   * Without these methods, only completions for ambient modules will be provided.
+   */
+  /* TODO:
+  readDirectory(
+    dirPath: string,
+    extensions?: ReadonlyArray<string>,
+    exclude?: ReadonlyArray<string>,
+    include?: ReadonlyArray<string>,
+    depth?: number
+  ): string[] {
+    return fs.readdirSync(dirPath);
+  }
+  */
+
+  readFile(filePath: string, encoding?: string): string | undefined {
+    return fs.readFileSync(filePath, encoding);
+  }
+
+  fileExists(filePath: string): boolean {
+    return fs.existsSync(filePath);
+  }
+
 }
