@@ -29,11 +29,11 @@ function getTsLintConfig(
   const versionMajor = parseInt(tsLintVersion, 10);
   if (versionMajor <= 3) {
     const oldTSLint = TSLint as any;
-    const tsLintConfigPath = oldTSLint.findConfigurationPath(null, projectRoot);
-    return tsLintConfigPath ? oldTSLint.loadConfigurationFromPath(tsLintConfigPath) : null;
+    const tsLintConfigPath1 = oldTSLint.findConfigurationPath(null, projectRoot);
+    return tsLintConfigPath1 ? oldTSLint.loadConfigurationFromPath(tsLintConfigPath1) : null;
   }
-  const tsLintConfigPath = TSLint.Linter.findConfigurationPath(null, projectRoot);
-  return tsLintConfigPath ? TSLint.Linter.loadConfigurationFromPath(tsLintConfigPath) : null;
+  const tsLintConfigPath2 = TSLint.Linter.findConfigurationPath(null, projectRoot);
+  return tsLintConfigPath2 ? TSLint.Linter.loadConfigurationFromPath(tsLintConfigPath2) : null;
 }
 
 function parseConfigFile(ts: typeof TSType, projectRoot: string): TSType.ParsedCommandLine {
@@ -120,11 +120,11 @@ export function onProjectRefresh(projectRoot: string): void {
 }
 
 export function onProjectClose(projectRoot: string): void {
-  Object.keys(projects).forEach((path) => {
-    delete projects[path];
+  Object.keys(projects).forEach((p) => {
+    delete projects[p];
   });
-  Object.keys(tsconfigDirMap).forEach((path) => {
-    delete tsconfigDirMap[path];
+  Object.keys(tsconfigDirMap).forEach((p) => {
+    delete tsconfigDirMap[p];
   });
 }
 
